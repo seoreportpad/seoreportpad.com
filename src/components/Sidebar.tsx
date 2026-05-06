@@ -3,21 +3,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  StickyNote,
-  BookOpen,
-  Settings,
-  ClipboardCheck,
-  ChevronRight,
-  X,
-  Menu,
-  CalendarDays,
-  TrendingUp,
-  Link2,
-  Target,
-  LogOut,
+  LayoutDashboard, Users, FileText, StickyNote, BookOpen,
+  Settings, ClipboardCheck, ChevronRight, X, Menu,
+  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap,
 } from "lucide-react";
 
 const nav = [
@@ -37,6 +25,11 @@ const nav = [
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [sub, setSub] = useState<{ isTrialing?: boolean; plan?: string; trialEndsAt?: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/subscription").then(r => r.json()).then(setSub).catch(() => {});
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -88,6 +81,30 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
+      {/* Trial / upgrade banner */}
+      {sub?.isTrialing && (
+        <div className="mx-3 mb-3 bg-gradient-to-br from-blue-600/20 to-violet-600/20 border border-blue-500/30 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Zap size={13} className="text-yellow-400" />
+            <p className="text-xs font-bold text-white">Free Trial</p>
+          </div>
+          <p className="text-xs text-slate-400 mb-2">
+            Ends {sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString() : "soon"}
+          </p>
+          <Link href="/pricing" className="block text-center text-xs bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded-lg font-semibold transition-colors">
+            Upgrade to Pro
+          </Link>
+        </div>
+      )}
+      {sub && !sub.isTrialing && sub.plan !== "pro" && (
+        <div className="mx-3 mb-3 bg-slate-800/60 border border-slate-700/40 rounded-xl px-4 py-3">
+          <p className="text-xs font-bold text-slate-300 mb-1">Free Plan</p>
+          <Link href="/pricing" className="block text-center text-xs bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded-lg font-semibold transition-colors mt-2">
+            Upgrade to Pro →
+          </Link>
+        </div>
+      )}
+
       {/* Badge */}
       <div className="mx-3 mb-3 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/40">
         <p className="text-xs font-semibold text-slate-300 mb-1">Screaming Frog</p>
@@ -103,11 +120,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       <div className="px-4 py-4 border-t border-slate-700/60">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0">
-            MI
+            {sub?.plan === "pro" ? "★" : "U"}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-slate-200 truncate">Muhammad Ismail</p>
-            <p className="text-xs text-slate-500">SEO Specialist</p>
+            <p className="text-xs font-medium text-slate-200 truncate">{sub?.plan === "pro" ? "Pro Member" : "Free Trial"}</p>
+            <Link href="/pricing" className="text-xs text-blue-400 hover:text-blue-300">
+              {sub?.plan === "pro" ? "Manage plan" : "Upgrade →"}
+            </Link>
           </div>
           <button
             onClick={handleLogout}

@@ -1,42 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { getUserClient } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json([]);
   try {
-    const clientId = req.nextUrl.searchParams.get("clientId");
-    const month = req.nextUrl.searchParams.get("month");
-    const year = req.nextUrl.searchParams.get("year");
-
-    let query = supabase
-      .from("work_logs")
-      .select("*, clients(name, website)")
-      .order("log_date", { ascending: false });
-
+    const sb = getUserClient(req);
+    const { searchParams } = req.nextUrl;
+    const clientId = searchParams.get("clientId");
+    const month = searchParams.get("month");
+    const year = searchParams.get("year");
+    let query = sb.from("work_logs").select("*, clients(name, website)").order("log_date", { ascending: false });
     if (clientId) query = query.eq("client_id", clientId);
     if (month) query = query.eq("month", month);
     if (year) query = query.eq("year", Number(year));
-
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data ?? []);
-  } catch (e: unknown) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 
 export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
+    const sb = getUserClient(req);
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
-    const { data, error } = await supabase
-      .from("work_logs")
-      .insert(body)
-      .select()
-      .single();
+    const { data, error } = await sb.from("work_logs").insert({ ...body, user_id: user.id }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
-  } catch (e: unknown) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

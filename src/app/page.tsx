@@ -92,10 +92,10 @@ export default function HomePage() {
             <span className="font-bold text-slate-800 text-lg">SEO Reports</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/audit" className="text-sm text-slate-600 hover:text-slate-900 font-medium hidden md:block">Audit Checklist</Link>
-            <Link href="/dashboard/reports" className="text-sm text-slate-600 hover:text-slate-900 font-medium hidden md:block">Reports</Link>
-            <Link href="/dashboard" className="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors">
-              Open Dashboard
+            <Link href="/pricing" className="text-sm text-slate-600 hover:text-slate-900 font-medium hidden md:block">Pricing</Link>
+            <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900 font-medium hidden md:block">Sign In</Link>
+            <Link href="/signup" className="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors">
+              Start Free Trial
             </Link>
           </div>
         </div>

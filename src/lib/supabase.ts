@@ -1,27 +1,25 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-let _supabase: SupabaseClient | null = null;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 export function isSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return !!(url && key && url.startsWith("https://") && key.length > 10);
+  return !!(url && anonKey && url.startsWith("https://") && anonKey.length > 10);
 }
 
-export function getSupabase(): SupabaseClient {
-  if (!_supabase) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key || !url.startsWith("https://")) {
-      throw new Error("Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local");
-    }
-    _supabase = createClient(url, key);
-  }
-  return _supabase;
+// Anon client — used for auth operations
+export const supabase = createClient(url, anonKey);
+
+// User-scoped client — passes the user's JWT so RLS applies correctly
+export function createUserClient(accessToken: string): SupabaseClient {
+  return createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
 }
 
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    return (getSupabase() as unknown as Record<string | symbol, unknown>)[prop];
-  },
-});
+// Service role client — bypasses RLS, used only in webhook/admin routes
+export function createServiceClient(): SupabaseClient {
+  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not set");
+  return createClient(url, serviceKey, { auth: { persistSession: false } });
+}

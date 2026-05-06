@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ClipboardCheck, Lock, Mail, Eye, EyeOff } from "lucide-react";
 
@@ -53,7 +54,7 @@ export default function LoginPage() {
             <ClipboardCheck size={30} className="text-white" />
           </div>
           <h1 className="text-3xl font-black text-white">SEO Reports</h1>
-          <p className="text-slate-400 mt-1 text-sm">Admin Panel — Sign in to continue</p>
+          <p className="text-slate-400 mt-1 text-sm">Sign in to your account</p>
         </div>
 
         {/* Card */}
@@ -125,6 +126,12 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <div className="mt-6 pt-5 border-t border-white/10 text-center">
+            <p className="text-sm text-slate-400">
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Start free trial</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
