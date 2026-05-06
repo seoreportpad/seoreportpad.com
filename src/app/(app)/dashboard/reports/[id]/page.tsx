@@ -6,6 +6,7 @@ import {
   ArrowLeft, Download, Send, Pencil,
   TrendingUp, TrendingDown, Minus,
   Globe, Mail, CheckCircle2, XCircle, AlertCircle,
+  Link2, Copy, Check,
 } from "lucide-react";
 import ReportScreenshots from "@/components/ReportScreenshots";
 import {
@@ -130,13 +131,46 @@ export default function ReportViewPage() {
   const [emailModal, setEmailModal] = useState(false);
   const [emailForm, setEmailForm] = useState({ subject: "", customMsg: "" });
   const [sending, setSending] = useState(false);
+  const [portalLink, setPortalLink] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [agency, setAgency] = useState({ agency_name: "", primary_color: "#2563eb" });
 
   useEffect(() => {
     fetch(`/api/reports/${id}`)
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null)
       .then(d => { if (d && !d.error) setReport(d); });
+
+    fetch("/api/agency")
+      .then(r => r.ok ? r.json() : {})
+      .then((d: Partial<{ agency_name: string; primary_color: string }>) => {
+        if (d?.agency_name) setAgency({ agency_name: d.agency_name, primary_color: d.primary_color ?? "#2563eb" });
+      })
+      .catch(() => {});
   }, [id]);
+
+  const generatePortalLink = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ report_id: id }),
+      });
+      const data = await res.json();
+      if (data.token) {
+        const link = `${window.location.origin}/portal/${data.token}`;
+        setPortalLink(link);
+      }
+    } finally { setPortalLoading(false); }
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(portalLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (!report) return <div className="text-center py-20 text-slate-400 animate-pulse">Loading report...</div>;
 
@@ -189,50 +223,103 @@ export default function ReportViewPage() {
 
   const sendEmail = async () => {
     setSending(true);
+    const portalSection = portalLink
+      ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:18px;margin-top:20px;text-align:center">
+           <p style="margin:0 0 10px;color:#166534;font-size:14px;font-weight:600">View Your Full Report Online</p>
+           <a href="${portalLink}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 24px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none">Open Client Portal →</a>
+         </div>`
+      : "";
+
     const html = `
-      <div style="font-family:Inter,Arial,sans-serif;max-width:680px;margin:0 auto;color:#1e293b;background:#f8fafc;padding:20px">
-        <div style="background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:white;padding:36px;border-radius:16px 16px 0 0;text-align:center">
-          <h1 style="margin:0;font-size:26px;font-weight:700">Monthly SEO Report</h1>
-          <p style="margin:8px 0 0;opacity:.8;font-size:15px">${report.month} ${report.year}</p>
-        </div>
-        <div style="background:white;padding:32px;border-radius:0 0 16px 16px;border:1px solid #e2e8f0;border-top:0">
-          <p style="font-size:15px">Dear <strong>${client.name}</strong>,</p>
-          <p style="color:#475569">${emailForm.customMsg || "Please find your SEO performance report for this month. We have been working hard to improve your online visibility and rankings."}</p>
-          ${m ? `
-          <h2 style="color:#1e3a5f;border-bottom:2px solid #e2e8f0;padding-bottom:10px;margin-top:28px">Key Performance Metrics</h2>
-          <table style="width:100%;border-collapse:collapse;font-size:14px">
-            <thead><tr style="background:#f1f5f9"><th style="padding:10px 14px;text-align:left;color:#64748b">Metric</th><th style="padding:10px 14px;text-align:center;color:#64748b">Current</th><th style="padding:10px 14px;text-align:center;color:#64748b">Previous</th><th style="padding:10px 14px;text-align:center;color:#64748b">Change</th></tr></thead>
-            <tbody>
-              <tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 14px">Organic Traffic</td><td style="padding:10px 14px;text-align:center;font-weight:600">${m.organic_traffic?.toLocaleString() ?? "—"}</td><td style="padding:10px 14px;text-align:center;color:#94a3b8">${m.prev_traffic?.toLocaleString() ?? "—"}</td><td style="padding:10px 14px;text-align:center;color:${(m.organic_traffic ?? 0) >= (m.prev_traffic ?? 0) ? "#16a34a" : "#dc2626"}">${m.organic_traffic != null && m.prev_traffic != null ? ((m.organic_traffic - m.prev_traffic) >= 0 ? "+" : "") + (m.organic_traffic - m.prev_traffic).toLocaleString() : "—"}</td></tr>
-              <tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 14px">Backlinks</td><td style="padding:10px 14px;text-align:center;font-weight:600">${m.backlinks?.toLocaleString() ?? "—"}</td><td style="padding:10px 14px;text-align:center;color:#94a3b8">${m.prev_backlinks?.toLocaleString() ?? "—"}</td><td style="padding:10px 14px;text-align:center;color:${(m.backlinks ?? 0) >= (m.prev_backlinks ?? 0) ? "#16a34a" : "#dc2626"}">${m.backlinks != null && m.prev_backlinks != null ? ((m.backlinks - m.prev_backlinks) >= 0 ? "+" : "") + (m.backlinks - m.prev_backlinks).toLocaleString() : "—"}</td></tr>
-              <tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 14px">Domain Authority</td><td style="padding:10px 14px;text-align:center;font-weight:600">${m.domain_authority ?? "—"}</td><td style="padding:10px 14px;text-align:center;color:#94a3b8">${m.prev_da ?? "—"}</td><td style="padding:10px 14px;text-align:center;color:${(m.domain_authority ?? 0) >= (m.prev_da ?? 0) ? "#16a34a" : "#dc2626"}">${m.domain_authority != null && m.prev_da != null ? ((m.domain_authority - m.prev_da) >= 0 ? "+" : "") + (m.domain_authority - m.prev_da) : "—"}</td></tr>
-            </tbody>
-          </table>` : ""}
-          ${m?.notes ? `<h2 style="color:#1e3a5f;margin-top:28px">Monthly Summary</h2><p style="color:#475569;line-height:1.7">${m.notes}</p>` : ""}
-          ${m?.recommendations ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:20px;margin-top:20px"><h2 style="color:#1d4ed8;margin:0 0 10px">Next Month Plan</h2><p style="color:#1e40af;margin:0;line-height:1.7">${m.recommendations}</p></div>` : ""}
-          <p style="margin-top:32px;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0;padding-top:20px">Best regards,<br/><strong>Muhammad Ismail</strong><br/>SEO Specialist</p>
-        </div>
-      </div>`;
+      <p style="font-size:15px;color:#1e293b">Dear <strong>${client.name}</strong>,</p>
+      <p style="color:#475569;line-height:1.7">${emailForm.customMsg || "Please find your SEO performance report for this month. We have been working hard to improve your online visibility and search rankings."}</p>
+      ${m ? `
+      <h2 style="color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:10px;margin-top:28px;font-size:16px">Key Performance — ${report.month} ${report.year}</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px">
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="padding:10px 14px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0">Metric</th>
+            <th style="padding:10px 14px;text-align:center;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0">Current</th>
+            <th style="padding:10px 14px;text-align:center;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0">Previous</th>
+            <th style="padding:10px 14px;text-align:center;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${m.organic_traffic != null ? `<tr style="border-bottom:1px solid #f1f5f9">
+            <td style="padding:10px 14px;color:#374151">Organic Traffic</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:700;color:#1e293b">${m.organic_traffic.toLocaleString()}</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">${m.prev_traffic?.toLocaleString() ?? "—"}</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:600;color:${m.prev_traffic != null ? (m.organic_traffic >= m.prev_traffic ? "#16a34a" : "#dc2626") : "#94a3b8"}">${m.prev_traffic != null ? (m.organic_traffic - m.prev_traffic >= 0 ? "+" : "") + (m.organic_traffic - m.prev_traffic).toLocaleString() : "—"}</td>
+          </tr>` : ""}
+          ${m.backlinks != null ? `<tr style="border-bottom:1px solid #f1f5f9">
+            <td style="padding:10px 14px;color:#374151">Backlinks</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:700;color:#1e293b">${m.backlinks.toLocaleString()}</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">${m.prev_backlinks?.toLocaleString() ?? "—"}</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:600;color:${m.prev_backlinks != null ? (m.backlinks >= m.prev_backlinks ? "#16a34a" : "#dc2626") : "#94a3b8"}">${m.prev_backlinks != null ? (m.backlinks - m.prev_backlinks >= 0 ? "+" : "") + (m.backlinks - m.prev_backlinks).toLocaleString() : "—"}</td>
+          </tr>` : ""}
+          ${m.domain_authority != null ? `<tr style="border-bottom:1px solid #f1f5f9">
+            <td style="padding:10px 14px;color:#374151">Domain Authority</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:700;color:#1e293b">${m.domain_authority}</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">${m.prev_da ?? "—"}</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:600;color:${m.prev_da != null ? (m.domain_authority >= m.prev_da ? "#16a34a" : "#dc2626") : "#94a3b8"}">${m.prev_da != null ? (m.domain_authority - m.prev_da >= 0 ? "+" : "") + (m.domain_authority - m.prev_da) : "—"}</td>
+          </tr>` : ""}
+          ${m.impressions != null ? `<tr style="border-bottom:1px solid #f1f5f9">
+            <td style="padding:10px 14px;color:#374151">GSC Impressions</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:700;color:#1e293b">${m.impressions.toLocaleString()}</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">—</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">—</td>
+          </tr>` : ""}
+          ${m.clicks != null ? `<tr>
+            <td style="padding:10px 14px;color:#374151">GSC Clicks</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:700;color:#1e293b">${m.clicks.toLocaleString()}</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">—</td>
+            <td style="padding:10px 14px;text-align:center;color:#94a3b8">—</td>
+          </tr>` : ""}
+        </tbody>
+      </table>` : ""}
+
+      ${report.keywords?.length > 0 ? `
+      <h2 style="color:#1e293b;font-size:16px;margin-top:28px;margin-bottom:12px;border-bottom:2px solid #e2e8f0;padding-bottom:10px">Keyword Rankings</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f8fafc">
+          <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0">Keyword</th>
+          <th style="padding:8px 12px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0">Prev</th>
+          <th style="padding:8px 12px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0">Now</th>
+          <th style="padding:8px 12px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0">Change</th>
+        </tr></thead>
+        <tbody>
+          ${report.keywords.slice(0, 8).map(k => {
+            const diff = k.curr_ranking != null && k.prev_ranking != null ? k.prev_ranking - k.curr_ranking : null;
+            return `<tr style="border-bottom:1px solid #f8fafc">
+              <td style="padding:8px 12px;color:#374151;font-weight:500">${k.keyword}</td>
+              <td style="padding:8px 12px;text-align:center;color:#94a3b8">#${k.prev_ranking ?? "—"}</td>
+              <td style="padding:8px 12px;text-align:center;font-weight:700;color:#1e293b">#${k.curr_ranking ?? "—"}</td>
+              <td style="padding:8px 12px;text-align:center;font-weight:600;color:${diff == null ? "#94a3b8" : diff > 0 ? "#16a34a" : diff < 0 ? "#dc2626" : "#94a3b8"}">${diff == null ? "—" : diff > 0 ? `▲ ${diff}` : diff < 0 ? `▼ ${Math.abs(diff)}` : "—"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>` : ""}
+
+      ${m?.notes ? `<div style="background:#f8fafc;border-left:4px solid #3b82f6;padding:16px 20px;margin-top:24px;border-radius:0 8px 8px 0"><h3 style="margin:0 0 8px;color:#1e293b;font-size:14px;font-weight:700">Monthly Summary</h3><p style="margin:0;color:#475569;line-height:1.7;font-size:14px">${m.notes.replace(/\n/g, "<br/>")}</p></div>` : ""}
+      ${m?.recommendations ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:18px 20px;margin-top:16px"><h3 style="margin:0 0 8px;color:#1d4ed8;font-size:14px;font-weight:700">Focus for Next Month</h3><p style="margin:0;color:#1e40af;line-height:1.7;font-size:14px">${m.recommendations.replace(/\n/g, "<br/>")}</p></div>` : ""}
+      ${portalSection}`;
 
     const res = await fetch("/api/send-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to: client.email,
-        subject: emailForm.subject || `SEO Report — ${report.month} ${report.year} | ${client.name}`,
+        subject: emailForm.subject || `${report.month} ${report.year} SEO Report — ${client.name}`,
         html,
+        reportId: id,
       }),
     });
     const data = await res.json();
     setSending(false);
     if (data.success) {
-      await fetch(`/api/reports/${id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...report, status: "sent", keywords: report.keywords, work_done: report.work_done, metrics: report.metrics }),
-      });
       setReport({ ...report, status: "sent" });
       setEmailModal(false);
-      alert("Email sent successfully!");
+      alert("Report sent successfully!");
     } else {
       alert("Error: " + data.error);
     }
@@ -240,19 +327,30 @@ export default function ReportViewPage() {
 
   return (
     <>
-      <style>{`@media print { .no-print { display: none !important; } @page { margin: 1cm; } }`}</style>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          @page { margin: 1.2cm; size: A4; }
+          body { font-size: 12px; }
+          .print-break { page-break-before: always; }
+        }
+      `}</style>
 
       {/* Top bar */}
-      <div className="no-print flex items-center justify-between mb-6">
+      <div className="no-print flex items-center justify-between mb-6 flex-wrap gap-3">
         <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm">
           <ArrowLeft size={16} /> Back to Reports
         </button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={downloadCSV} className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors">
             <Download size={15} /> CSV
           </button>
           <button onClick={() => window.print()} className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors">
             <Download size={15} /> PDF
+          </button>
+          <button onClick={generatePortalLink} disabled={portalLoading}
+            className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
+            <Link2 size={15} /> {portalLoading ? "Generating…" : "Client Link"}
           </button>
           <button onClick={() => setEmailModal(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700 transition-colors shadow-sm">
             <Send size={15} /> Email Client
@@ -262,6 +360,19 @@ export default function ReportViewPage() {
           </Link>
         </div>
       </div>
+
+      {/* Portal link bar */}
+      {portalLink && (
+        <div className="no-print mb-4 flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          <Link2 size={15} className="text-green-600 shrink-0" />
+          <p className="text-sm text-green-700 flex-1 truncate font-medium">{portalLink}</p>
+          <button onClick={copyLink}
+            className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-100 hover:bg-green-200 px-3 py-1.5 rounded-lg transition-colors shrink-0">
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+      )}
 
       {/* Report body */}
       <div className="max-w-4xl mx-auto space-y-5">
@@ -1102,40 +1213,66 @@ export default function ReportViewPage() {
         )}
 
         {/* Footer */}
-        <div className="bg-slate-100 rounded-2xl p-5 text-center">
-          <p className="text-slate-500 text-sm font-medium">Muhammad Ismail — SEO Specialist</p>
-          <p className="text-slate-400 text-xs mt-1">Report for {client.name} · {report.month} {report.year}</p>
+        <div className="rounded-2xl p-5 text-center" style={{ background: agency.primary_color || "#1e293b" }}>
+          <p className="text-sm font-bold text-white">{agency.agency_name || "SEO Report Manager"}</p>
+          <p className="text-xs mt-1 opacity-70 text-white">Report for {client.name} · {report.month} {report.year}</p>
         </div>
       </div>
 
       {/* Email Modal */}
       {emailModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 no-print p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg">
             <h2 className="text-lg font-bold text-slate-800 mb-1">Send Report via Email</h2>
             <p className="text-sm text-slate-500 mb-5">
-              Will be sent to: <strong>{client.email}</strong>
-              <br />
-              <span className="text-xs text-slate-400">From: reports@seoreportpad.com (via Resend)</span>
+              To: <strong>{client.email}</strong>
+              {agency.agency_name && <span className="ml-2 text-slate-400">· From: {agency.agency_name}</span>}
             </p>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-slate-600 block mb-1">Subject (optional)</label>
-                <input placeholder={`SEO Report — ${report.month} ${report.year}`} value={emailForm.subject}
+                <label className="text-xs font-medium text-slate-600 block mb-1">Subject line</label>
+                <input placeholder={`${report.month} ${report.year} SEO Report — ${client.name}`}
+                  value={emailForm.subject}
                   onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-600 block mb-1">Custom Message (optional)</label>
-                <textarea rows={2} placeholder="Hi, please find your monthly SEO report..." value={emailForm.customMsg}
+                <label className="text-xs font-medium text-slate-600 block mb-1">Opening message (optional)</label>
+                <textarea rows={3}
+                  placeholder="Hi, please find your monthly SEO performance report attached. We've had a great month with significant improvements in organic traffic..."
+                  value={emailForm.customMsg}
                   onChange={e => setEmailForm({ ...emailForm, customMsg: e.target.value })}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+
+              {/* Portal link option */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                {portalLink ? (
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 size={14} className="text-green-500 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-green-700">Client portal link will be included in the email</p>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">{portalLink}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Link2 size={14} className="text-slate-400" />
+                      <p className="text-xs text-slate-500">Include client portal link?</p>
+                    </div>
+                    <button onClick={generatePortalLink} disabled={portalLoading}
+                      className="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50">
+                      {portalLoading ? "Generating…" : "Generate link"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={sendEmail} disabled={sending}
-                className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-                <Send size={15} /> {sending ? "Sending..." : "Send Report"}
+                className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+                <Send size={15} /> {sending ? "Sending..." : "Send Report Email"}
               </button>
               <button onClick={() => setEmailModal(false)} className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm hover:bg-slate-50 transition-colors">
                 Cancel
