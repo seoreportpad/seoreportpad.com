@@ -17,6 +17,12 @@ interface RecentReport {
   metrics?: { organic_traffic?: number; prev_traffic?: number };
 }
 
+interface ClientHealth {
+  id: string; name: string; website: string;
+  latestReport?: { month: string; year: number; status: string };
+  traffic?: number; prevTraffic?: number;
+}
+
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 interface AuditScore { found: number; fixed: number; checked: number; total: number; }
@@ -42,6 +48,7 @@ export default function DashboardPage() {
   const [audit, setAudit] = useState<AuditScore>({ found: 0, fixed: 0, checked: 0, total: 180 });
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<{ month: string; traffic: number }[]>([]);
+  const [clientHealth, setClientHealth] = useState<ClientHealth[]>([]);
 
   useEffect(() => {
     try {
@@ -72,6 +79,29 @@ export default function DashboardPage() {
       });
       const allReports: RecentReport[] = Array.isArray(reports) ? reports : [];
       setRecent(allReports.slice(0, 5));
+
+      // Build client health scores from reports data
+      if (Array.isArray(clients)) {
+        const reportsByClient: Record<string, RecentReport[]> = {};
+        for (const r of allReports) {
+          const cid = (r as RecentReport & { client_id?: string }).client_id ?? r.clients?.name;
+          if (cid) {
+            if (!reportsByClient[cid]) reportsByClient[cid] = [];
+            reportsByClient[cid].push(r);
+          }
+        }
+        const healthList: ClientHealth[] = (clients as { id: string; name: string; website: string }[]).slice(0, 6).map(c => {
+          const clientReports = reportsByClient[c.id] ?? [];
+          const latest = clientReports[0];
+          return {
+            id: c.id, name: c.name, website: c.website,
+            latestReport: latest ? { month: latest.month, year: latest.year, status: latest.status } : undefined,
+            traffic: latest?.metrics?.organic_traffic,
+            prevTraffic: latest?.metrics?.prev_traffic,
+          };
+        });
+        setClientHealth(healthList);
+      }
 
       // Build monthly traffic trend (aggregate across all clients)
       const byMonth: Record<string, number> = {};
@@ -289,6 +319,44 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+
+          {/* Client Health Scores */}
+          {clientHealth.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-blue-600" />
+                  <h2 className="font-bold text-slate-700">Client Health</h2>
+                </div>
+                <Link href="/dashboard/clients" className="text-blue-600 text-xs font-medium flex items-center gap-1 hover:underline">
+                  All <ArrowRight size={12} />
+                </Link>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {clientHealth.map(c => {
+                  const diff = c.traffic != null && c.prevTraffic != null ? c.traffic - c.prevTraffic : null;
+                  const pct = diff != null && c.prevTraffic ? Math.round((diff / c.prevTraffic) * 100) : null;
+                  const status = !c.latestReport ? "red" : c.latestReport.status === "sent" ? "green" : pct !== null && pct < -10 ? "red" : "amber";
+                  const dot = status === "green" ? "bg-green-500" : status === "amber" ? "bg-amber-400" : "bg-red-500";
+                  return (
+                    <Link key={c.id} href={`/dashboard/clients/${c.id}`}
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors">
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 truncate">{c.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{c.latestReport ? `${c.latestReport.month} ${c.latestReport.year}` : "No reports"}</p>
+                      </div>
+                      {pct !== null && (
+                        <span className={`text-xs font-bold ${pct >= 0 ? "text-green-600" : "text-red-500"}`}>
+                          {pct >= 0 ? "+" : ""}{pct}%
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right column */}

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Download, CheckSquare, Square } from "lucide-react";
+import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2 } from "lucide-react";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const WORK_CATEGORIES = ["On-Page SEO","Technical SEO","Link Building","Content","Local SEO","Reporting","Other"];
@@ -181,6 +181,32 @@ const defaultOnPage: OnPageSEO = {
   url_issues: "", url_length_ok: true,
   on_page_score: "", issues_found: "", issues_fixed: "", notes: "",
 };
+
+function AISummaryButton({ reportId, onGenerated }: { reportId: string; onGenerated: (s: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId }),
+      });
+      const data = await res.json();
+      if (data.summary) onGenerated(data.summary);
+      else alert(data.error ?? "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <button type="button" onClick={generate} disabled={loading}
+      className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50">
+      {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+      {loading ? "Generating…" : "AI Summary"}
+    </button>
+  );
+}
 
 export default function ReportForm({ reportId, initialClientId, initial }: Props) {
   const router = useRouter();
@@ -588,7 +614,12 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
             {inp("Pages Indexed", metrics.pages_indexed, v => setMetrics({ ...metrics, pages_indexed: v }), "number")}
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Summary / Notes</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-slate-600">Summary / Notes</label>
+              {reportId && (
+                <AISummaryButton reportId={reportId} onGenerated={summary => setMetrics(m => ({ ...m, notes: summary }))} />
+              )}
+            </div>
             <textarea value={metrics.notes} onChange={e => setMetrics({ ...metrics, notes: e.target.value })} rows={3}
               placeholder="Monthly summary for the client..."
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />

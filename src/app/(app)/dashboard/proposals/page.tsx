@@ -1,0 +1,245 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Trash2, Download, FileText, CheckCircle, Loader2 } from "lucide-react";
+
+interface Client { id: string; name: string; website: string; }
+interface Proposal {
+  id: string; title: string; client_id: string; monthly_price: number;
+  services: string[]; scope: string; deliverables: string; timeline: string; terms: string;
+  clients?: { name: string; website: string };
+  created_at: string;
+}
+
+const DEFAULT_SERVICES = [
+  "On-Page SEO Optimization", "Technical SEO Audit", "Link Building",
+  "Local SEO & GBP Management", "Content Strategy", "Monthly Reporting",
+];
+
+export default function ProposalsPage() {
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [agencyName, setAgencyName] = useState("SEO Agency");
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const [form, setForm] = useState({
+    title: "", client_id: "", monthly_price: "",
+    services: [] as string[], scope: "", deliverables: "", timeline: "3 months", terms: "",
+  });
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/proposals").then(r => r.ok ? r.json() : []),
+      fetch("/api/clients").then(r => r.ok ? r.json() : []),
+      fetch("/api/agency").then(r => r.ok ? r.json() : {}),
+    ]).then(([props, cls, agency]) => {
+      setProposals(Array.isArray(props) ? props : []);
+      setClients(Array.isArray(cls) ? cls : []);
+      const ag = agency as Record<string, string>;
+      if (ag?.agency_name) setAgencyName(ag.agency_name);
+      setLoading(false);
+    });
+  }, []);
+
+  const toggleService = (s: string) =>
+    setForm(f => ({ ...f, services: f.services.includes(s) ? f.services.filter(x => x !== s) : [...f.services, s] }));
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, monthly_price: Number(form.monthly_price) }),
+      });
+      if (res.ok) {
+        const p = await res.json();
+        const client = clients.find(c => c.id === form.client_id);
+        setProposals(prev => [{ ...p, clients: client ? { name: client.name, website: client.website } : undefined }, ...prev]);
+        setSaved(true);
+        setTimeout(() => { setSaved(false); setCreating(false); }, 2000);
+        setForm({ title: "", client_id: "", monthly_price: "", services: [], scope: "", deliverables: "", timeline: "3 months", terms: "" });
+      }
+    } finally { setSaving(false); }
+  };
+
+  const deleteProposal = async (id: string) => {
+    await fetch("/api/proposals", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    setProposals(p => p.filter(x => x.id !== id));
+  };
+
+  const printProposal = (p: Proposal) => {
+    const client = p.clients ?? clients.find(c => c.id === p.client_id);
+    const html = `<!DOCTYPE html><html><head><title>${p.title}</title>
+    <style>body{font-family:sans-serif;max-width:700px;margin:40px auto;color:#1e293b;line-height:1.6}
+    h1{font-size:28px;font-weight:900;margin-bottom:4px}h2{font-size:16px;color:#3b82f6;margin:24px 0 8px;font-weight:700;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
+    .badge{display:inline-block;background:#eff6ff;color:#2563eb;padding:2px 10px;border-radius:20px;font-size:13px;font-weight:600;margin:2px}
+    .price{font-size:36px;font-weight:900;color:#2563eb}.sub{color:#64748b;font-size:14px}
+    ul{margin:0;padding-left:20px}li{margin:4px 0}
+    </style></head><body>
+    <h1>${agencyName}</h1>
+    <p class="sub">SEO Proposal · ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
+    <hr style="margin:16px 0;border-color:#e2e8f0"/>
+    <p><strong>Prepared for:</strong> ${client?.name ?? "Client"} · ${client?.website ?? ""}</p>
+    <p><strong>Proposal:</strong> ${p.title}</p>
+    <h2>Pricing</h2>
+    <p class="price">$${p.monthly_price}<span style="font-size:18px;color:#64748b">/mo</span></p>
+    ${p.timeline ? `<p class="sub">Timeline: ${p.timeline}</p>` : ""}
+    <h2>Services Included</h2>
+    <div>${(p.services ?? []).map(s => `<span class="badge">${s}</span>`).join("")}</div>
+    ${p.scope ? `<h2>Scope of Work</h2><p>${p.scope.replace(/\n/g, "<br/>")}</p>` : ""}
+    ${p.deliverables ? `<h2>Deliverables</h2><ul>${p.deliverables.split("\n").filter(Boolean).map(d => `<li>${d}</li>`).join("")}</ul>` : ""}
+    ${p.terms ? `<h2>Terms & Conditions</h2><p style="font-size:13px;color:#475569">${p.terms.replace(/\n/g, "<br/>")}</p>` : ""}
+    <p style="margin-top:40px;color:#94a3b8;font-size:12px">Generated by SEO Report Manager · ${agencyName}</p>
+    </body></html>`;
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 500); }
+  };
+
+  const inputCls = "w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
+
+  return (
+    <div className="animate-fade-in">
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-black text-slate-800">Proposals</h1>
+          <p className="text-slate-500 text-sm mt-1">Create branded SEO proposals for new and existing clients</p>
+        </div>
+        <button onClick={() => setCreating(!creating)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
+          <Plus size={16} /> New Proposal
+        </button>
+      </div>
+
+      {/* Create form */}
+      {creating && (
+        <form onSubmit={handleSave} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6 space-y-5">
+          <h2 className="font-bold text-slate-700 text-lg">New Proposal</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Proposal Title</label>
+              <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+                placeholder="SEO Package for Client" className={inputCls} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Client</label>
+              <select value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}
+                className={inputCls}>
+                <option value="">Select client…</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Monthly Price ($)</label>
+              <input required type="number" value={form.monthly_price} onChange={e => setForm({ ...form, monthly_price: e.target.value })}
+                placeholder="500" className={inputCls} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Timeline</label>
+              <input value={form.timeline} onChange={e => setForm({ ...form, timeline: e.target.value })}
+                placeholder="3 months" className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-2">Services Included</label>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_SERVICES.map(s => (
+                <button type="button" key={s} onClick={() => toggleService(s)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${
+                    form.services.includes(s) ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300"
+                  }`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-1.5">Scope of Work</label>
+            <textarea value={form.scope} onChange={e => setForm({ ...form, scope: e.target.value })} rows={3}
+              placeholder="Describe the overall scope and approach…"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-1.5">Deliverables (one per line)</label>
+            <textarea value={form.deliverables} onChange={e => setForm({ ...form, deliverables: e.target.value })} rows={3}
+              placeholder={"Monthly SEO report\nKeyword ranking updates\nLink building summary"}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 block mb-1.5">Terms & Conditions (optional)</label>
+            <textarea value={form.terms} onChange={e => setForm({ ...form, terms: e.target.value })} rows={2}
+              placeholder="Payment due within 14 days…"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+          <div className="flex gap-3">
+            <button type="submit" disabled={saving}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                saved ? "bg-green-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
+              } disabled:opacity-50`}>
+              {saving ? <Loader2 size={15} className="animate-spin" /> : saved ? <CheckCircle size={15} /> : null}
+              {saved ? "Saved!" : saving ? "Saving…" : "Save Proposal"}
+            </button>
+            <button type="button" onClick={() => setCreating(false)}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Proposal list */}
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2].map(i => <div key={i} className="h-20 bg-slate-100 rounded-2xl animate-pulse" />)}
+        </div>
+      ) : proposals.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
+          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FileText size={28} className="text-slate-300" />
+          </div>
+          <p className="text-slate-400 font-medium mb-1">No proposals yet</p>
+          <p className="text-slate-300 text-sm">Click &ldquo;New Proposal&rdquo; to create your first branded proposal</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {proposals.map(p => (
+            <div key={p.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                <FileText size={18} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-700 truncate">{p.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {p.clients?.name ?? "No client"} · ${p.monthly_price}/mo · {p.timeline}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {(p.services ?? []).slice(0, 3).map(s => (
+                    <span key={s} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">{s}</span>
+                  ))}
+                  {(p.services ?? []).length > 3 && <span className="text-xs text-slate-400">+{p.services.length - 3} more</span>}
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => printProposal(p)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition-colors">
+                  <Download size={13} /> Download PDF
+                </button>
+                <button onClick={() => deleteProposal(p.id)}
+                  className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-50">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div ref={printRef} />
+    </div>
+  );
+}

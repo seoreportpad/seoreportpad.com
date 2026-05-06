@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, FileText, StickyNote, BookOpen,
   Settings, ClipboardCheck, ChevronRight, X, Menu,
-  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap,
+  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers,
 } from "lucide-react";
 
 const nav = [
@@ -17,6 +17,8 @@ const nav = [
   { href: "/dashboard/backlinks",    label: "Backlinks",   icon: Link2 },
   { href: "/dashboard/competitors",  label: "Competitors", icon: Target },
   { href: "/dashboard/audit",        label: "SEO Audit",   icon: ClipboardCheck },
+  { href: "/dashboard/proposals",    label: "Proposals",   icon: Briefcase },
+  { href: "/dashboard/bulk-reports", label: "Bulk Reports",icon: Layers },
   { href: "/dashboard/notes",        label: "SEO Notes",   icon: StickyNote },
   { href: "/dashboard/prompts",      label: "Templates",   icon: BookOpen },
   { href: "/dashboard/settings",     label: "Settings",    icon: Settings },
