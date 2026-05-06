@@ -23,6 +23,8 @@ function ReportsList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterYear, setFilterYear] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
 
   const load = () =>
     fetch(`/api/reports${clientId ? `?clientId=${clientId}` : ""}`)
@@ -38,12 +40,17 @@ function ReportsList() {
     load();
   };
 
+  const years = [...new Set(reports.map(r => String(r.year)))].sort((a,b) => Number(b)-Number(a));
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
   const filtered = reports.filter(r => {
     const matchSearch = !search ||
       r.clients?.name.toLowerCase().includes(search.toLowerCase()) ||
       r.month.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || r.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchYear = filterYear === "all" || String(r.year) === filterYear;
+    const matchMonth = filterMonth === "all" || r.month === filterMonth;
+    return matchSearch && matchStatus && matchYear && matchMonth;
   });
 
   const counts = { all: reports.length, sent: reports.filter(r => r.status === "sent").length, ready: reports.filter(r => r.status === "ready").length, draft: reports.filter(r => r.status === "draft").length };
@@ -68,9 +75,10 @@ function ReportsList() {
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search reports..."
-              className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm w-48" />
+              placeholder="Search client or month..."
+              className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm w-52" />
           </div>
+          {/* Status filter */}
           <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
             {(["all","sent","ready","draft"] as const).map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
@@ -79,6 +87,27 @@ function ReportsList() {
               </button>
             ))}
           </div>
+          {/* Year filter */}
+          {years.length > 1 && (
+            <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+              className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700">
+              <option value="all">All Years</option>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          )}
+          {/* Month filter */}
+          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)}
+            className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700">
+            <option value="all">All Months</option>
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          {/* Clear filters */}
+          {(filterStatus !== "all" || filterYear !== "all" || filterMonth !== "all" || search) && (
+            <button onClick={() => { setFilterStatus("all"); setFilterYear("all"); setFilterMonth("all"); setSearch(""); }}
+              className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm">
+              Clear filters
+            </button>
+          )}
         </div>
       )}
 

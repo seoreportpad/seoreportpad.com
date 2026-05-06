@@ -19,6 +19,7 @@ const nav = [
   { href: "/dashboard/audit",        label: "SEO Audit",   icon: ClipboardCheck },
   { href: "/dashboard/proposals",    label: "Proposals",   icon: Briefcase },
   { href: "/dashboard/bulk-reports", label: "Bulk Reports",icon: Layers },
+  { href: "/dashboard/auto-reports", label: "Auto Reports", icon: Zap },
   { href: "/dashboard/notes",        label: "SEO Notes",   icon: StickyNote },
   { href: "/dashboard/prompts",      label: "Templates",   icon: BookOpen },
   { href: "/dashboard/settings",     label: "Settings",    icon: Settings },

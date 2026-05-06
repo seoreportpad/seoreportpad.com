@@ -6,12 +6,14 @@ import {
   ArrowLeft, Download, Send, Pencil,
   TrendingUp, TrendingDown, Minus,
   Globe, Mail, CheckCircle2, XCircle, AlertCircle,
-  Link2, Copy, Check,
+  Link2, Copy, Check, FileSpreadsheet, LayoutTemplate,
+  ArrowUpRight, ArrowDownRight, Target, Activity, Layers,
 } from "lucide-react";
 import ReportScreenshots from "@/components/ReportScreenshots";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend, RadarChart, Radar,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell,
 } from "recharts";
 
 interface Keyword { id: string; keyword: string; prev_ranking?: number; curr_ranking?: number; search_volume?: number; url?: string; }
@@ -134,7 +136,8 @@ export default function ReportViewPage() {
   const [portalLink, setPortalLink] = useState("");
   const [portalLoading, setPortalLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [agency, setAgency] = useState({ agency_name: "", primary_color: "#2563eb" });
+  const [agency, setAgency] = useState({ agency_name: "", primary_color: "#2563eb", logo_url: "" });
+  const [template, setTemplate] = useState<"full" | "executive" | "minimal">("full");
 
   useEffect(() => {
     fetch(`/api/reports/${id}`)
@@ -144,8 +147,8 @@ export default function ReportViewPage() {
 
     fetch("/api/agency")
       .then(r => r.ok ? r.json() : {})
-      .then((d: Partial<{ agency_name: string; primary_color: string }>) => {
-        if (d?.agency_name) setAgency({ agency_name: d.agency_name, primary_color: d.primary_color ?? "#2563eb" });
+      .then((d: Partial<{ agency_name: string; primary_color: string; logo_url: string }>) => {
+        if (d?.agency_name) setAgency({ agency_name: d.agency_name, primary_color: d.primary_color ?? "#2563eb", logo_url: d.logo_url ?? "" });
       })
       .catch(() => {});
   }, [id]);
@@ -219,6 +222,68 @@ export default function ReportViewPage() {
     a.href = URL.createObjectURL(blob);
     a.download = `SEO-Report-${client.name}-${report.month}-${report.year}.csv`;
     a.click();
+  };
+
+  const downloadExcel = async () => {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Overview
+    const overview = [
+      ["SEO Monthly Report", "", ""],
+      ["Client", client.name, ""],
+      ["Period", `${report.month} ${report.year}`, ""],
+      ["Website", client.website, ""],
+      ["Status", report.status, ""],
+      [],
+      ["PERFORMANCE METRICS", "Current", "Previous"],
+      ["Organic Traffic", m?.organic_traffic ?? "", m?.prev_traffic ?? ""],
+      ["Backlinks", m?.backlinks ?? "", m?.prev_backlinks ?? ""],
+      ["Domain Authority", m?.domain_authority ?? "", m?.prev_da ?? ""],
+      ["GSC Impressions", m?.impressions ?? "", ""],
+      ["GSC Clicks", m?.clicks ?? "", ""],
+      ["Avg. Position", m?.avg_position ?? "", ""],
+      ["Technical Issues Fixed", m?.technical_fixed ?? "", ""],
+      ["Pages Indexed", m?.pages_indexed ?? "", ""],
+    ];
+    const ws1 = XLSX.utils.aoa_to_sheet(overview);
+    ws1["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, ws1, "Overview");
+
+    // Sheet 2: Keywords
+    const kwRows = [
+      ["Keyword", "Previous Rank", "Current Rank", "Change", "Search Volume", "URL"],
+      ...(report.keywords ?? []).map(k => {
+        const diff = k.prev_ranking != null && k.curr_ranking != null ? k.prev_ranking - k.curr_ranking : "";
+        return [k.keyword, k.prev_ranking ?? "", k.curr_ranking ?? "", diff !== "" ? (Number(diff) > 0 ? `+${diff}` : String(diff)) : "", k.search_volume ?? "", k.url ?? ""];
+      }),
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(kwRows);
+    ws2["!cols"] = [{ wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Keywords");
+
+    // Sheet 3: Work Done
+    const workRows = [
+      ["Category", "Task"],
+      ...(report.work_done ?? []).map(w => [w.category, w.task]),
+    ];
+    const ws3 = XLSX.utils.aoa_to_sheet(workRows);
+    ws3["!cols"] = [{ wch: 20 }, { wch: 60 }];
+    XLSX.utils.book_append_sheet(wb, ws3, "Work Done");
+
+    // Sheet 4: Scores
+    const scores: (string | number)[][] = [["Section", "Score /100", "Issues Found", "Issues Fixed"]];
+    if (report.on_page_seo?.on_page_score != null) scores.push(["On-Page SEO", report.on_page_seo.on_page_score, report.on_page_seo.issues_found ?? "", report.on_page_seo.issues_fixed ?? ""]);
+    if (report.local_seo?.local_seo_score != null) scores.push(["Local SEO", report.local_seo.local_seo_score, report.local_seo.issues_found ?? "", report.local_seo.issues_fixed ?? ""]);
+    const ws4 = XLSX.utils.aoa_to_sheet(scores);
+    ws4["!cols"] = [{ wch: 20 }, { wch: 12 }, { wch: 14 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws4, "SEO Scores");
+
+    // Sheet 5: Notes
+    const notesRows = [["Notes"], [m?.notes ?? ""], [], ["Recommendations"], [m?.recommendations ?? ""]];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(notesRows), "Notes");
+
+    XLSX.writeFile(wb, `SEO-Report-${client.name}-${report.month}-${report.year}.xlsx`);
   };
 
   const sendEmail = async () => {
@@ -330,9 +395,16 @@ export default function ReportViewPage() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          @page { margin: 1.2cm; size: A4; }
-          body { font-size: 12px; }
-          .print-break { page-break-before: always; }
+          @page { margin: 1.5cm 1.8cm; size: A4; }
+          @page :first { margin-top: 0; }
+          body { font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-break { page-break-before: always; break-before: page; }
+          .print-avoid-break { page-break-inside: avoid; break-inside: avoid; }
+          * { box-shadow: none !important; }
+          .bg-gradient-to-br { background: #1e293b !important; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 10px; }
+          .recharts-wrapper { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
 
@@ -342,8 +414,21 @@ export default function ReportViewPage() {
           <ArrowLeft size={16} /> Back to Reports
         </button>
         <div className="flex gap-2 flex-wrap">
+          {/* Template switcher */}
+          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <LayoutTemplate size={13} className="text-slate-400 ml-1" />
+            {(["full","executive","minimal"] as const).map(t => (
+              <button key={t} onClick={() => setTemplate(t)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize transition-colors ${template === t ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-50"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
           <button onClick={downloadCSV} className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors">
             <Download size={15} /> CSV
+          </button>
+          <button onClick={downloadExcel} className="flex items-center gap-2 border border-slate-200 bg-white text-emerald-700 px-3.5 py-2 rounded-xl text-sm hover:bg-emerald-50 transition-colors">
+            <FileSpreadsheet size={15} /> Excel
           </button>
           <button onClick={() => window.print()} className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors">
             <Download size={15} /> PDF
@@ -378,38 +463,121 @@ export default function ReportViewPage() {
       <div className="max-w-4xl mx-auto space-y-5">
 
         {/* Hero header */}
-        <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-blue-900 text-white rounded-2xl p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-32 translate-x-32" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
-          <div className="relative flex justify-between items-start">
-            <div>
-              <span className="inline-block bg-blue-500/30 text-blue-200 text-xs px-3 py-1 rounded-full mb-3 border border-blue-400/20">
-                Monthly SEO Report
-              </span>
-              <h1 className="text-3xl font-bold text-white">{client.name}</h1>
-              {client.company && <p className="text-slate-300 mt-1">{client.company}</p>}
-              <div className="flex items-center gap-4 mt-3">
-                <a href={client.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white">
-                  <Globe size={14} /> {client.website}
-                </a>
-                <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white">
-                  <Mail size={14} /> {client.email}
-                </a>
+        <div className="print-avoid-break rounded-2xl overflow-hidden">
+          {/* Agency brand bar */}
+          {agency.agency_name && (
+            <div className="flex items-center justify-between px-6 py-3" style={{ background: agency.primary_color }}>
+              <div className="flex items-center gap-3">
+                {agency.logo_url && <img src={agency.logo_url} alt={agency.agency_name} className="h-7 w-auto object-contain" />}
+                <span className="text-white font-bold text-sm">{agency.agency_name}</span>
               </div>
+              <span className="text-white/70 text-xs">SEO Performance Report</span>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-white">{report.month}</p>
-              <p className="text-blue-300 text-lg">{report.year}</p>
-              <span className={`inline-block mt-3 text-xs px-3 py-1.5 rounded-full font-semibold ${
-                report.status === "sent" ? "bg-green-500/20 text-green-300 border border-green-400/30"
-                : report.status === "ready" ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
-                : "bg-amber-500/20 text-amber-300 border border-amber-400/30"
-              }`}>
-                {report.status === "sent" ? "✓ Sent" : report.status === "ready" ? "Ready" : "Draft"}
-              </span>
+          )}
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-blue-900 text-white p-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-32 translate-x-32" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+            <div className="relative flex justify-between items-start">
+              <div>
+                <span className="inline-block bg-blue-500/30 text-blue-200 text-xs px-3 py-1 rounded-full mb-3 border border-blue-400/20">
+                  Monthly SEO Report
+                </span>
+                <h1 className="text-3xl font-bold text-white">{client.name}</h1>
+                {client.company && <p className="text-slate-300 mt-1">{client.company}</p>}
+                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                  <a href={client.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white">
+                    <Globe size={14} /> {client.website}
+                  </a>
+                  <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white">
+                    <Mail size={14} /> {client.email}
+                  </a>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-white">{report.month}</p>
+                <p className="text-blue-300 text-lg">{report.year}</p>
+                <span className={`inline-block mt-3 text-xs px-3 py-1.5 rounded-full font-semibold ${
+                  report.status === "sent" ? "bg-green-500/20 text-green-300 border border-green-400/30"
+                  : report.status === "ready" ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
+                  : "bg-amber-500/20 text-amber-300 border border-amber-400/30"
+                }`}>
+                  {report.status === "sent" ? "✓ Sent" : report.status === "ready" ? "Ready" : "Draft"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* SEO Score Summary Dashboard */}
+        {(() => {
+          const scores = [
+            { label: "On-Page SEO", score: report.on_page_seo?.on_page_score, color: "#3b82f6" },
+            { label: "Local SEO", score: report.local_seo?.local_seo_score, color: "#10b981" },
+            { label: "Schema", score: report.schema_seo?.schema_score ? parseInt(report.schema_seo.schema_score) : undefined, color: "#8b5cf6" },
+            { label: "Technical", score: report.technical_seo?.technical_score ? parseInt(report.technical_seo.technical_score) : undefined, color: "#f59e0b" },
+          ].filter(s => s.score != null);
+          const trafficChange = m?.organic_traffic != null && m?.prev_traffic != null
+            ? Math.round(((m.organic_traffic - m.prev_traffic) / (m.prev_traffic || 1)) * 100) : null;
+          const klImproved = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking < k.prev_ranking).length;
+          const klWorsened = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking > k.prev_ranking).length;
+          const workTotal = (report.work_done ?? []).length;
+          if (scores.length === 0 && trafficChange == null && workTotal === 0) return null;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <h2 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
+                <Activity size={18} className="text-blue-500" /> SEO Performance Summary
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {trafficChange != null && (
+                  <div className={`rounded-xl p-4 text-center ${trafficChange >= 0 ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100"}`}>
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      {trafficChange >= 0 ? <ArrowUpRight size={16} className="text-green-600" /> : <ArrowDownRight size={16} className="text-red-500" />}
+                      <span className={`text-2xl font-black ${trafficChange >= 0 ? "text-green-600" : "text-red-500"}`}>{trafficChange >= 0 ? "+" : ""}{trafficChange}%</span>
+                    </div>
+                    <p className="text-xs font-medium text-slate-500">Traffic Change</p>
+                  </div>
+                )}
+                {klImproved + klWorsened > 0 && (
+                  <div className="rounded-xl p-4 text-center bg-blue-50 border border-blue-100">
+                    <span className="text-2xl font-black text-blue-600">{klImproved}/{(report.keywords ?? []).length}</span>
+                    <p className="text-xs font-medium text-slate-500 mt-1">Keywords Improved</p>
+                  </div>
+                )}
+                {workTotal > 0 && (
+                  <div className="rounded-xl p-4 text-center bg-violet-50 border border-violet-100">
+                    <span className="text-2xl font-black text-violet-600">{workTotal}</span>
+                    <p className="text-xs font-medium text-slate-500 mt-1">Tasks Completed</p>
+                  </div>
+                )}
+                {(report.on_page_seo?.issues_fixed != null || report.technical_seo?.issues_fixed) && (
+                  <div className="rounded-xl p-4 text-center bg-emerald-50 border border-emerald-100">
+                    <span className="text-2xl font-black text-emerald-600">
+                      {(report.on_page_seo?.issues_fixed ?? 0) + (report.technical_seo?.issues_fixed ? parseInt(String(report.technical_seo.issues_fixed)) : 0)}
+                    </span>
+                    <p className="text-xs font-medium text-slate-500 mt-1">Issues Fixed</p>
+                  </div>
+                )}
+              </div>
+              {scores.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Category Scores</p>
+                  {scores.map(s => (
+                    <div key={s.label} className="flex items-center gap-3">
+                      <span className="text-sm text-slate-600 w-24 shrink-0">{s.label}</span>
+                      <div className="flex-1 bg-slate-100 rounded-full h-2.5">
+                        <div className="h-2.5 rounded-full transition-all" style={{ width: `${s.score}%`, background: s.color }} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 w-10 text-right">{s.score}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-20 text-center ${Number(s.score) >= 80 ? "bg-green-100 text-green-700" : Number(s.score) >= 60 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                        {Number(s.score) >= 80 ? "Excellent" : Number(s.score) >= 60 ? "Good" : "Needs Work"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Metrics grid */}
         {m && (
@@ -441,6 +609,107 @@ export default function ReportViewPage() {
                     <Bar dataKey="Curr" name="Current" fill="#3b82f6" radius={[6,6,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Before / After Comparison */}
+            {(m.organic_traffic != null || m.backlinks != null || m.domain_authority != null) && (m.prev_traffic != null || m.prev_backlinks != null || m.prev_da != null) && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+                <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+                  <Target size={16} className="text-blue-500" /> Before vs After
+                </h2>
+                <div className="space-y-4">
+                  {m.organic_traffic != null && m.prev_traffic != null && (() => {
+                    const pct = m.prev_traffic > 0 ? Math.round(((m.organic_traffic - m.prev_traffic) / m.prev_traffic) * 100) : 0;
+                    const improved = pct >= 0;
+                    return (
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm text-slate-600">Organic Traffic</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${improved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{improved ? "+" : ""}{pct}%</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                            <p className="text-xs text-slate-400 mb-1">Before</p>
+                            <p className="text-xl font-black text-slate-500">{m.prev_traffic.toLocaleString()}</p>
+                          </div>
+                          <div className={`rounded-xl p-3 text-center border ${improved ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
+                            <p className={`text-xs mb-1 ${improved ? "text-green-500" : "text-red-400"}`}>After</p>
+                            <p className={`text-xl font-black ${improved ? "text-green-600" : "text-red-500"}`}>{m.organic_traffic.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {m.backlinks != null && m.prev_backlinks != null && (() => {
+                    const pct = m.prev_backlinks > 0 ? Math.round(((m.backlinks - m.prev_backlinks) / m.prev_backlinks) * 100) : 0;
+                    const improved = pct >= 0;
+                    return (
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm text-slate-600">Backlinks</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${improved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{improved ? "+" : ""}{pct}%</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                            <p className="text-xs text-slate-400 mb-1">Before</p>
+                            <p className="text-xl font-black text-slate-500">{m.prev_backlinks.toLocaleString()}</p>
+                          </div>
+                          <div className={`rounded-xl p-3 text-center border ${improved ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
+                            <p className={`text-xs mb-1 ${improved ? "text-green-500" : "text-red-400"}`}>After</p>
+                            <p className={`text-xl font-black ${improved ? "text-green-600" : "text-red-500"}`}>{m.backlinks.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {m.domain_authority != null && m.prev_da != null && (() => {
+                    const diff = m.domain_authority - m.prev_da;
+                    return (
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm text-slate-600">Domain Authority</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${diff >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{diff >= 0 ? "+" : ""}{diff}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                            <p className="text-xs text-slate-400 mb-1">Before</p>
+                            <p className="text-xl font-black text-slate-500">{m.prev_da}</p>
+                          </div>
+                          <div className={`rounded-xl p-3 text-center border ${diff >= 0 ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
+                            <p className={`text-xs mb-1 ${diff >= 0 ? "text-green-500" : "text-red-400"}`}>After</p>
+                            <p className={`text-xl font-black ${diff >= 0 ? "text-green-600" : "text-red-500"}`}>{m.domain_authority}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Keyword improvement overview */}
+                  {(report.keywords ?? []).length > 0 && (() => {
+                    const improved = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking < k.prev_ranking).length;
+                    const worsened = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking > k.prev_ranking).length;
+                    const unchanged = (report.keywords ?? []).length - improved - worsened;
+                    return (
+                      <div>
+                        <p className="text-sm text-slate-600 mb-2">Keyword Movement</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-center">
+                            <p className="text-xl font-black text-green-600">{improved}</p>
+                            <p className="text-xs text-green-500 font-medium">Improved ↑</p>
+                          </div>
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+                            <p className="text-xl font-black text-slate-500">{unchanged}</p>
+                            <p className="text-xs text-slate-400 font-medium">Stable →</p>
+                          </div>
+                          <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
+                            <p className="text-xl font-black text-red-500">{worsened}</p>
+                            <p className="text-xs text-red-400 font-medium">Declined ↓</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             )}
 
@@ -522,8 +791,40 @@ export default function ReportViewPage() {
           </div>
         )}
 
+        {/* Task Completion Summary */}
+        {Object.keys(workByCategory).length > 0 && template !== "minimal" && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+              <Layers size={16} className="text-violet-500" /> Task Completion Summary
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              {Object.entries(workByCategory).map(([cat, tasks]) => (
+                <div key={cat} className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-black text-slate-700">{tasks.length}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">{cat}</p>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              {Object.entries(workByCategory).map(([cat, tasks]) => {
+                const pct = Math.round((tasks.length / (report.work_done ?? []).length) * 100);
+                return (
+                  <div key={cat} className="flex items-center gap-3">
+                    <span className="text-xs text-slate-500 w-32 shrink-0">{cat}</span>
+                    <div className="flex-1 bg-slate-100 rounded-full h-2">
+                      <div className="h-2 rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 w-8 text-right">{tasks.length}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-slate-400 mt-3">{(report.work_done ?? []).length} total tasks completed this month</p>
+          </div>
+        )}
+
         {/* On-Page SEO Section */}
-        {report.on_page_seo && (() => {
+        {template === "full" && report.on_page_seo && (() => {
           const op = report.on_page_seo!;
           const scoreColor = op.on_page_score != null
             ? op.on_page_score >= 80 ? "text-green-600 bg-green-50 border-green-200"
@@ -701,7 +1002,7 @@ export default function ReportViewPage() {
         })()}
 
         {/* Local SEO Section */}
-        {report.local_seo && (() => {
+        {template === "full" && report.local_seo && (() => {
           const ls = report.local_seo!;
           const scoreColor = ls.local_seo_score != null
             ? ls.local_seo_score >= 80 ? "text-green-600 bg-green-50 border-green-200"
@@ -886,7 +1187,7 @@ export default function ReportViewPage() {
         })()}
 
         {/* Schema Markup Section */}
-        {report.schema_seo && (() => {
+        {template === "full" && report.schema_seo && (() => {
           const sc = report.schema_seo!;
           const scoreNum = sc.schema_score ? parseInt(sc.schema_score) : null;
           const scoreColor = scoreNum != null
@@ -1032,7 +1333,7 @@ export default function ReportViewPage() {
         })()}
 
         {/* Technical SEO Section */}
-        {report.technical_seo && (() => {
+        {template === "full" && report.technical_seo && (() => {
           const ts = report.technical_seo!;
           const scoreNum = ts.technical_score ? parseInt(ts.technical_score) : null;
           const scoreColor = scoreNum != null
@@ -1198,8 +1499,12 @@ export default function ReportViewPage() {
           );
         })()}
 
-        {/* Screenshots */}
-        <ReportScreenshots reportId={id} />
+        {/* Screenshots & Evidence */}
+        {template !== "minimal" && (
+          <div className="print-avoid-break">
+            <ReportScreenshots reportId={id} />
+          </div>
+        )}
 
         {/* Recommendations */}
         {m?.recommendations && (
