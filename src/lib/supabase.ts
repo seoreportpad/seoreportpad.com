@@ -13,7 +13,16 @@ export function isSupabaseConfigured(): boolean {
 // Anon client — lazy, only created when first used
 let _supabase: SupabaseClient | null = null;
 export function getSupabaseClient(): SupabaseClient {
-  if (!_supabase) _supabase = createClient(getUrl(), getAnonKey());
+  if (!_supabase) {
+    const url = getUrl();
+    const key = getAnonKey();
+    // Use placeholder values so createClient doesn't throw at module evaluation
+    // time when env vars are absent. Real calls will fail gracefully.
+    _supabase = createClient(
+      url || "https://placeholder.supabase.co",
+      key || "placeholder-anon-key-0000000000000000000000000000",
+    );
+  }
   return _supabase;
 }
 // Keep named export for legacy imports (signup page uses this directly)
