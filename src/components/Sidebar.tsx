@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, FileText, StickyNote, BookOpen,
   Settings, ClipboardCheck, ChevronRight, X, Menu,
-  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers,
+  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers, Wrench,
 } from "lucide-react";
 
 const nav = [
@@ -20,6 +20,7 @@ const nav = [
   { href: "/dashboard/proposals",    label: "Proposals",   icon: Briefcase },
   { href: "/dashboard/bulk-reports", label: "Bulk Reports",icon: Layers },
   { href: "/dashboard/auto-reports", label: "Auto Reports", icon: Zap },
+  { href: "/dashboard/tools",        label: "SEO Tools",   icon: Wrench },
   { href: "/dashboard/notes",        label: "SEO Notes",   icon: StickyNote },
   { href: "/dashboard/prompts",      label: "Templates",   icon: BookOpen },
   { href: "/dashboard/settings",     label: "Settings",    icon: Settings },
