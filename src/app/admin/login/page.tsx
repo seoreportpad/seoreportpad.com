@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Shield, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function AdminLoginPage() {
@@ -73,8 +74,12 @@ export default function AdminLoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
-          Restricted access · Unauthorized access is prohibited
+        <p className="text-center text-sm text-slate-600 mt-5">
+          No admin account?{" "}
+          <Link href="/admin/signup" className="text-red-400 hover:text-red-300 font-semibold">Create one</Link>
+        </p>
+        <p className="text-center text-xs text-slate-700 mt-3">
+          Restricted access · Unauthorized use is prohibited
         </p>
       </div>
     </div>

@@ -12,12 +12,12 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Don't show sidebar on login page
-  if (pathname === "/admin/login") return null;
+  // Don't show sidebar on auth pages
+  if (pathname === "/admin/login" || pathname === "/admin/signup") return null;
 
   const logout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/admin/login");
+    router.replace("/admin/login");
     router.refresh();
   };
 
