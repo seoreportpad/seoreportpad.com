@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SEO Report Manager",
-  description: "Manage SEO clients, reports, notes and templates",
+  title: {
+    default: "SEO Report Pad - Automated SEO Reporting for Agencies",
+    template: "%s | SEO Report Pad"
+  },
+  description: "Manage SEO clients, reports, notes and templates with our professional SEO agency software.",
   icons: {
     icon: "/favicon.svg",
   },

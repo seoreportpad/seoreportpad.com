@@ -18,6 +18,7 @@ export default function ClientsPage() {
     fetch("/api/clients")
       .then(r => r.ok ? r.json() : []).catch(() => [])
       .then(d => setClients(Array.isArray(d) ? d : []))
+      .catch(() => setClients([]))
       .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, []);
@@ -34,7 +35,10 @@ export default function ClientsPage() {
     (c.company ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const initials = (name: string) => name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const initials = (name?: string) => {
+    if (!name) return "CL";
+    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  };
   const colors = ["from-blue-500 to-blue-600","from-violet-500 to-violet-600","from-teal-500 to-teal-600","from-orange-500 to-orange-600","from-pink-500 to-pink-600","from-green-500 to-green-600"];
   const colorFor = (id: string) => colors[id.charCodeAt(0) % colors.length];
 

@@ -35,8 +35,8 @@ export default function ProfitabilityPage() {
         fetch(`/api/work-logs?month=${filterMonth}&year=${filterYear}`)
       ]);
 
-      const clients = await clientsRes.json();
-      const logs = await logsRes.json();
+      const clients = Array.isArray(await clientsRes.json()) ? await clientsRes.json() : [];
+      const logs = Array.isArray(await logsRes.json()) ? await logsRes.json() : [];
 
       const calculatedStats = clients.map((client: any) => {
         const clientLogs = logs.filter((l: any) => l.client_id === client.id);
