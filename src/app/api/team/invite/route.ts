@@ -1,42 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserClient } from "@/lib/auth";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import { Resend } from "resend";
-import { randomUUID } from "crypto";
+import { getUserClient } from "@/lib/auth";
+import { createServiceClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
-  if (!isSupabaseConfigured()) return NextResponse.json({ error: "Not configured" }, { status: 503 });
   try {
     const sb = getUserClient(req);
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { email, role } = await req.json();
-    if (!email || !role) return NextResponse.json({ error: "email and role required" }, { status: 400 });
+    if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
 
-    const token = randomUUID();
-    const { data, error } = await sb.from("team_members").insert({
-      owner_id: user.id,
+    const service = createServiceClient();
+
+    // 1. Check if agency exists
+    const { data: agency } = await service.from("agency_settings").select("*").eq("user_id", user.id).single();
+    if (!agency) return NextResponse.json({ error: "Agency not configured" }, { status: 400 });
+
+    // 2. Insert into team_members (with pending status)
+    const { data: member, error: insertError } = await service.from("team_members").insert({
+      agency_id: agency.id,
       member_email: email,
-      role,
+      role: role || "editor",
       status: "pending",
-      invite_token: token,
+      invited_by: user.id
     }).select().single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertError) throw insertError;
 
-    if (process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const origin = req.headers.get("origin") ?? "https://seoreportpad.com";
+    // 3. Send invitation email via Resend
+    const resendKey = process.env.RESEND_API_KEY;
+    if (resendKey) {
+      const resend = new Resend(resendKey);
       await resend.emails.send({
-        from: "SEO Reports <reports@seoreportpad.com>",
+        from: `${agency.agency_name || "SEO Report Pad"} <onboarding@resend.dev>`,
         to: email,
-        subject: "You've been invited to join an SEO workspace",
-        html: `<p>You've been invited to join an SEO Reports workspace as <strong>${role}</strong>.</p>
-          <p><a href="${origin}/invite/accept?token=${token}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:12px">Accept Invite</a></p>`,
+        subject: `Invite: Join ${agency.agency_name || "the SEO agency"} workspace`,
+        html: `<div style="font-family: sans-serif; padding: 40px; color: #1e293b;">
+          <h1 style="font-size: 24px; font-weight: 900; margin-bottom: 20px;">You're Invited!</h1>
+          <p style="font-size: 16px; line-height: 1.6;">
+            <strong>${user.email}</strong> has invited you to join their agency workspace on <strong>SEO Report Pad</strong> as a <strong>${role}</strong>.
+          </p>
+          <div style="margin-top: 30px;">
+            <a href="${req.nextUrl.origin}/signup?invite=${member.id}" 
+               style="background: #2563eb; color: white; padding: 12px 24px; border-radius: 12px; font-weight: bold; text-decoration: none;">
+               Accept Invitation
+            </a>
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-top: 40px;">
+            If you didn't expect this, you can safely ignore this email.
+          </p>
+        </div>`
       });
     }
 
-    return NextResponse.json(data);
-  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
+    return NextResponse.json(member);
+  } catch (e: any) {
+    console.error("Invite Error:", e);
+    return NextResponse.json({ error: "Failed to send invitation" }, { status: 500 });
+  }
 }

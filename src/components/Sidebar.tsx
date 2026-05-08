@@ -5,25 +5,35 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, FileText, StickyNote, BookOpen,
   Settings, ClipboardCheck, ChevronRight, X, Menu,
-  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers, Wrench,
+  CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers, Wrench, Network, Sparkles, Building2, DollarSign,
+  Image as ImageIcon, MapPin
 } from "lucide-react";
 
 const nav = [
-  { href: "/dashboard",              label: "Dashboard",   icon: LayoutDashboard },
-  { href: "/dashboard/clients",      label: "Clients",     icon: Users },
-  { href: "/dashboard/reports",      label: "Reports",     icon: FileText },
-  { href: "/dashboard/daily-log",    label: "Daily Log",   icon: CalendarDays },
-  { href: "/dashboard/keywords",     label: "Keywords",    icon: TrendingUp },
-  { href: "/dashboard/backlinks",    label: "Backlinks",   icon: Link2 },
-  { href: "/dashboard/competitors",  label: "Competitors", icon: Target },
-  { href: "/dashboard/audit",        label: "SEO Audit",   icon: ClipboardCheck },
-  { href: "/dashboard/proposals",    label: "Proposals",   icon: Briefcase },
-  { href: "/dashboard/bulk-reports", label: "Bulk Reports",icon: Layers },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/clients", label: "Clients", icon: Users },
+  { href: "/dashboard/roadmap", label: "SEO Roadmap", icon: Layers },
+  { href: "/dashboard/leads", label: "Leads", icon: Zap },
+  { href: "/dashboard/reports", label: "Reports", icon: FileText },
+  { href: "/dashboard/daily-log", label: "Daily Log", icon: CalendarDays },
+  { href: "/dashboard/keywords", label: "Keywords", icon: TrendingUp },
+  { href: "/dashboard/semantic-map", label: "Semantic Map", icon: Network },
+  { href: "/dashboard/backlinks", label: "Backlinks", icon: Link2 },
+  { href: "/dashboard/competitors", label: "Competitors", icon: Target },
+  { href: "/dashboard/audit", label: "SEO Audit", icon: ClipboardCheck },
+  { href: "/dashboard/proposals", label: "Proposals", icon: Briefcase },
+  { href: "/dashboard/bulk-reports", label: "Bulk Reports", icon: Layers },
   { href: "/dashboard/auto-reports", label: "Auto Reports", icon: Zap },
-  { href: "/dashboard/tools",        label: "SEO Tools",   icon: Wrench },
-  { href: "/dashboard/notes",        label: "SEO Notes",   icon: StickyNote },
-  { href: "/dashboard/prompts",      label: "Templates",   icon: BookOpen },
-  { href: "/dashboard/settings",     label: "Settings",    icon: Settings },
+  { href: "/dashboard/tools", label: "SEO Tools", icon: Wrench },
+  { href: "/dashboard/tools/image-seo", label: "Image SEO", icon: ImageIcon },
+  { href: "/dashboard/tools/gap-analysis", label: "Gap Analysis", icon: Target },
+  { href: "/dashboard/tools/gmb", label: "GMB Optimizer", icon: MapPin },
+  { href: "/dashboard/tools/schema", label: "Schema Builder", icon: Building2 },
+  { href: "/dashboard/profitability", label: "Agency Profits", icon: DollarSign },
+  { href: "/dashboard/content-briefs", label: "Content Briefs", icon: Sparkles },
+  { href: "/dashboard/notes", label: "SEO Notes", icon: StickyNote },
+  { href: "/dashboard/prompts", label: "Templates", icon: BookOpen },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
@@ -32,7 +42,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const [sub, setSub] = useState<{ isTrialing?: boolean; plan?: string; trialEndsAt?: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/subscription").then(r => r.json()).then(setSub).catch(() => {});
+    fetch("/api/subscription").then(r => r.json()).then(setSub).catch(() => { });
   }, []);
 
   async function handleLogout() {
@@ -71,11 +81,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
               key={href}
               href={href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
-                active
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${active
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-900/30"
                   : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
+                }`}
             >
               <Icon size={17} className="shrink-0" />
               <span className="flex-1">{label}</span>

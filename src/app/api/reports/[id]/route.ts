@@ -7,9 +7,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const sb = getUserClient(req);
-    const { data, error } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*)").eq("id", id).single();
+    const { data, error } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), screenshots(*)").eq("id", id).single();
     if (error) return NextResponse.json({ error: error.message }, { status: 404 });
-    return NextResponse.json(data);
+
+    // Also fetch related client-level data for this report's month
+    const clientId = data.client_id;
+    const month = data.month;
+    const year = data.year;
+
+    const [backlinksRes, competitorsRes, workLogsRes, rankHistoryRes, agencyRes] = await Promise.all([
+      sb.from("backlinks").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+      sb.from("competitors").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+      sb.from("work_logs").select("*").eq("client_id", clientId).eq("month", month).eq("year", year).order("log_date", { ascending: false }),
+      sb.from("rank_history").select("*").eq("client_id", clientId).order("year", { ascending: true }).order("month", { ascending: true }),
+      sb.from("agencies").select("*").single(),
+    ]);
+
+    return NextResponse.json({
+      ...data,
+      backlinks: backlinksRes.data ?? [],
+      competitors: competitorsRes.data ?? [],
+      work_logs: workLogsRes.data ?? [],
+      rank_history: rankHistoryRes.data ?? [],
+      agency: agencyRes.data ?? null,
+    });
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 
@@ -30,7 +51,33 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await sb.from("schema_seo").delete().eq("report_id", id);
     await sb.from("technical_seo").delete().eq("report_id", id);
 
-    if (keywords?.length) await sb.from("keywords").insert(keywords.map((k: object) => ({ ...k, report_id: id })));
+    if (keywords?.length) {
+      await sb.from("keywords").insert(keywords.map((k: object) => ({ ...k, report_id: id })));
+
+      // Auto-save to rank_history for trend tracking (free — just DB writes)
+      const { data: reportMeta } = await sb.from("reports").select("client_id, month, year").eq("id", id).single();
+      if (reportMeta) {
+        const rankRows = (keywords as { keyword: string; curr_ranking?: number; url?: string }[])
+          .filter(k => k.curr_ranking != null)
+          .map(k => ({
+            client_id: reportMeta.client_id,
+            keyword: k.keyword,
+            position: k.curr_ranking!,
+            month: reportMeta.month,
+            year: reportMeta.year,
+            url: k.url ?? null,
+          }));
+        if (rankRows.length > 0) {
+          // Delete existing entries for this client/month/year then re-insert
+          await sb.from("rank_history")
+            .delete()
+            .eq("client_id", reportMeta.client_id)
+            .eq("month", reportMeta.month)
+            .eq("year", reportMeta.year);
+          await sb.from("rank_history").insert(rankRows);
+        }
+      }
+    }
     if (work_done?.length) await sb.from("work_done").insert(work_done.map((w: object) => ({ ...w, report_id: id })));
     if (metrics) await sb.from("metrics").insert({ ...metrics, report_id: id });
     if (on_page_seo) await sb.from("on_page_seo").insert({ ...on_page_seo, report_id: id });

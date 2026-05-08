@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   SF_CATEGORIES,
   SFCategory,
@@ -17,6 +17,10 @@ import {
   Circle,
   RotateCcw,
   Download,
+  Users,
+  Loader2,
+  CloudCheck,
+  CloudOff,
 } from "lucide-react";
 
 type CheckState = "none" | "found" | "fixed" | "na";
@@ -39,21 +43,6 @@ const CHECK_STATES: { value: CheckState; label: string; color: string }[] = [
   { value: "fixed", label: "Fixed", color: "text-green-600" },
   { value: "na", label: "N/A", color: "text-slate-400" },
 ];
-
-const STORAGE_KEY = "seo_audit_checks";
-
-function loadChecks(): Record<string, CheckState> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveChecks(checks: Record<string, CheckState>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(checks));
-}
 
 function TypeBadge({ type }: { type: IssueType }) {
   const cfg = TYPE_CONFIG[type];
@@ -203,22 +192,75 @@ function CategoryCard({
 }
 
 export default function AuditPage() {
-  const [checks, setChecks] = useState<Record<string, CheckState>>(loadChecks);
+  const [checks, setChecks] = useState<Record<string, CheckState>>({});
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<IssueType | "all">("all");
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterState, setFilterState] = useState<CheckState | "all">("all");
 
-  const updateCheck = (id: string, state: CheckState) => {
-    const updated = { ...checks, [id]: state };
-    setChecks(updated);
-    saveChecks(updated);
+  // Load clients and initial audit data
+  useEffect(() => {
+    fetch("/api/clients").then(r => r.json()).then(setClients).catch(() => {});
+    loadAuditData("all");
+  }, []);
+
+  const loadAuditData = async (clientId: string) => {
+    setLoading(true);
+    try {
+      const url = clientId === "all" ? "/api/audit/results" : `/api/audit/results?clientId=${clientId}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setChecks(data || {});
+    } catch {
+      setChecks({});
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const resetAll = () => {
-    if (!confirm("Reset all audit checks?")) return;
+  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cid = e.target.value;
+    setSelectedClientId(cid);
+    loadAuditData(cid);
+  };
+
+  const updateCheck = async (id: string, state: CheckState) => {
+    const updated = { ...checks, [id]: state };
+    setChecks(updated);
+    
+    // Sync to cloud
+    setSyncing(true);
+    try {
+      await fetch("/api/audit/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          checks: updated, 
+          clientId: selectedClientId === "all" ? null : selectedClientId 
+        }),
+      });
+    } catch (err) {
+      console.error("Sync failed", err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const resetAll = async () => {
+    if (!confirm("Reset all audit checks for this view?")) return;
     setChecks({});
-    saveChecks({});
+    await fetch("/api/audit/results", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        checks: {}, 
+        clientId: selectedClientId === "all" ? null : selectedClientId 
+      }),
+    });
   };
 
   const exportCSV = () => {
@@ -237,7 +279,8 @@ export default function AuditPage() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `SEO-Audit-${new Date().toISOString().slice(0,10)}.csv`;
+    const clientName = selectedClientId === "all" ? "Workspace" : clients.find(c => c.id === selectedClientId)?.name || "Client";
+    a.download = `SEO-Audit-${clientName}-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
   };
 
@@ -264,27 +307,51 @@ export default function AuditPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">SEO Audit Checklist</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Screaming Frog · {SF_CATEGORIES.length} categories · {totalIssues} checks
+          <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
+            Screaming Frog · {totalIssues} checks
+            <span className="text-slate-200">|</span>
+            {syncing ? (
+              <span className="flex items-center gap-1 text-blue-500 font-medium">
+                <Loader2 size={12} className="animate-spin" /> Syncing…
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-slate-400">
+                <CloudCheck size={12} className="text-green-500" /> Synced
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex gap-2">
+        
+        <div className="flex flex-wrap gap-2">
+          <div className="relative min-w-48">
+            <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <select
+              value={selectedClientId}
+              onChange={handleClientChange}
+              className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="all">Global Workspace</option>
+              {clients.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
           <button onClick={exportCSV}
             className="flex items-center gap-2 text-sm border border-slate-200 bg-white px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
             <Download size={14} /> Export CSV
           </button>
           <button onClick={resetAll}
             className="flex items-center gap-2 text-sm border border-slate-200 bg-white px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
-            <RotateCcw size={14} /> Reset All
+            <RotateCcw size={14} /> Reset
           </button>
         </div>
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Total Checks", value: totalIssues, color: "text-slate-700", bg: "bg-white" },
           { label: "Issues Found", value: totalFound, color: "text-red-600", bg: "bg-red-50" },
@@ -292,7 +359,11 @@ export default function AuditPage() {
           { label: "Checked", value: totalChecked, color: "text-blue-600", bg: "bg-blue-50" },
         ].map(({ label, value, color, bg }) => (
           <div key={label} className={`${bg} rounded-xl border border-slate-100 shadow-sm px-5 py-4`}>
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            {loading ? (
+              <div className="h-8 w-12 bg-slate-200 animate-pulse rounded-lg" />
+            ) : (
+              <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            )}
             <p className="text-xs text-slate-500 mt-0.5">{label}</p>
           </div>
         ))}
@@ -345,31 +416,14 @@ export default function AuditPage() {
         </select>
       </div>
 
-      {/* Legend */}
-      <div className="flex gap-4 mb-4 flex-wrap">
-        {(["issue", "warning", "opportunity"] as IssueType[]).map((t) => {
-          const cfg = TYPE_CONFIG[t];
-          const Icon = cfg.icon;
-          return (
-            <span key={t} className={`flex items-center gap-1.5 text-xs font-medium ${cfg.color}`}>
-              <Icon size={12} /> {cfg.label}
-            </span>
-          );
-        })}
-        <span className="text-slate-300">|</span>
-        {(["high", "medium", "low"] as Priority[]).map((p) => {
-          const cfg = PRIORITY_CONFIG[p];
-          return (
-            <span key={p} className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-              {cfg.label} Priority
-            </span>
-          );
-        })}
-      </div>
-
       {/* Category cards */}
-      {filteredCats.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-16 bg-slate-50 animate-pulse rounded-xl" />
+          ))}
+        </div>
+      ) : filteredCats.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <Search size={40} className="mx-auto mb-3 opacity-30" />
           <p>No issues match your filters.</p>

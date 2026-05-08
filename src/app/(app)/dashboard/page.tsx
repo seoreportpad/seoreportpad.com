@@ -51,19 +51,22 @@ export default function DashboardPage() {
   const [clientHealth, setClientHealth] = useState<ClientHealth[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem("seo_audit_checks") ?? "{}");
-      const vals = Object.values(raw) as string[];
-      setAudit({
-        found: vals.filter(v => v === "found").length,
-        fixed: vals.filter(v => v === "fixed").length,
-        checked: vals.filter(v => v !== "none").length,
-        total: 180,
-      });
-    } catch { /* noop */ }
-
     const safe = (url: string) =>
       fetch(url).then(r => r.ok ? r.json() : []).catch(() => []);
+
+    // Fetch audit data from API instead of localStorage
+    fetch("/api/audit/results")
+      .then(r => r.json())
+      .then(data => {
+        const vals = Object.values(data || {}) as string[];
+        setAudit({
+          found: vals.filter(v => v === "found").length,
+          fixed: vals.filter(v => v === "fixed").length,
+          checked: vals.filter(v => v !== "none").length,
+          total: 180,
+        });
+      })
+      .catch(() => {});
 
     Promise.all([
       safe("/api/clients"),

@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, Minus,
   Globe, Mail, CheckCircle2, XCircle, AlertCircle,
   Link2, Copy, Check, FileSpreadsheet, LayoutTemplate,
-  ArrowUpRight, ArrowDownRight, Target, Activity, Layers,
+  ArrowUpRight, ArrowDownRight, Target, Activity, Layers, ReceiptText, MessageCircle, BarChart3,
 } from "lucide-react";
 import ReportScreenshots from "@/components/ReportScreenshots";
 import {
@@ -86,6 +86,19 @@ interface TechnicalSEO {
   gsc_coverage_errors?: string; gsc_manual_actions?: boolean; gsc_messages?: string;
   technical_score?: string; issues_found?: string; issues_fixed?: string; notes?: string;
 }
+interface Backlink {
+  id: string; source_url: string; target_url: string; anchor_text?: string;
+  da?: number; type?: string; status?: string; added_date?: string; notes?: string;
+}
+interface Competitor {
+  id: string; name: string; website: string; da?: number; keywords?: number; notes?: string;
+}
+interface WorkLog {
+  id: string; log_date: string; category: string; task: string; status?: string;
+}
+interface RankHistoryItem {
+  id: string; keyword: string; position: number; month: string; year: number; url?: string;
+}
 interface Report {
   id: string; month: string; year: number; status: string;
   clients: { id: string; name: string; email: string; website: string; company?: string; phone?: string };
@@ -96,6 +109,10 @@ interface Report {
   local_seo?: LocalSEO;
   schema_seo?: SchemaSEO;
   technical_seo?: TechnicalSEO;
+  backlinks?: Backlink[];
+  competitors?: Competitor[];
+  work_logs?: WorkLog[];
+  rank_history?: RankHistoryItem[];
 }
 
 function Delta({ curr, prev, lower = false }: { curr?: number | null; prev?: number | null; lower?: boolean }) {
@@ -138,6 +155,15 @@ export default function ReportViewPage() {
   const [copied, setCopied] = useState(false);
   const [agency, setAgency] = useState({ agency_name: "", primary_color: "#2563eb", logo_url: "" });
   const [template, setTemplate] = useState<"full" | "executive" | "minimal">("full");
+  const [invoiceModal, setInvoiceModal] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState({
+    number: `INV-${Date.now().toString().slice(-6)}`,
+    date: new Date().toISOString().split("T")[0],
+    amount: "500",
+    currency: "$",
+    description: "Monthly SEO Services",
+    items: [{ desc: "Technical SEO Audit & Fixes", qty: 1, price: 200 }, { desc: "Content Optimization & Link Building", qty: 1, price: 300 }]
+  });
 
   useEffect(() => {
     fetch(`/api/reports/${id}`)
@@ -179,6 +205,8 @@ export default function ReportViewPage() {
 
   const m = report.metrics;
   const client = report.clients;
+  const improved = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking < k.prev_ranking).length;
+  const top10 = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.curr_ranking <= 10).length;
 
   const chartData = m ? [
     { name: "Traffic", Prev: m.prev_traffic ?? 0, Curr: m.organic_traffic ?? 0 },
@@ -211,6 +239,15 @@ export default function ReportViewPage() {
       [],
       ["WORK DONE", "Category", "Task"],
       ...(report.work_done ?? []).map(w => ["", w.category, w.task]),
+      [],
+      ["DAILY WORK LOGS", "Date", "Category", "Task", "Status"],
+      ...(report.work_logs ?? []).map(l => ["", l.log_date, l.category, l.task, l.status ?? "done"]),
+      [],
+      ["BACKLINKS", "Source URL", "Target URL", "Anchor", "DA", "Status"],
+      ...(report.backlinks ?? []).map(b => ["", b.source_url, b.target_url, b.anchor_text ?? "", b.da ?? "", b.status ?? "live"]),
+      [],
+      ["COMPETITORS", "Name", "Website", "DA", "Keywords"],
+      ...(report.competitors ?? []).map(c => ["", c.name, c.website, c.da ?? "", c.keywords ?? ""]),
       [],
       ["NOTES"], [m?.notes ?? ""],
       [],
@@ -282,6 +319,50 @@ export default function ReportViewPage() {
     // Sheet 5: Notes
     const notesRows = [["Notes"], [m?.notes ?? ""], [], ["Recommendations"], [m?.recommendations ?? ""]];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(notesRows), "Notes");
+
+    // Sheet 6: Daily Work Logs
+    if ((report.work_logs ?? []).length > 0) {
+      const logRows = [
+        ["Date", "Category", "Task", "Status"],
+        ...(report.work_logs ?? []).map(l => [l.log_date, l.category, l.task, l.status ?? "done"]),
+      ];
+      const wsLogs = XLSX.utils.aoa_to_sheet(logRows);
+      wsLogs["!cols"] = [{ wch: 14 }, { wch: 18 }, { wch: 50 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, wsLogs, "Daily Logs");
+    }
+
+    // Sheet 7: Backlinks
+    if ((report.backlinks ?? []).length > 0) {
+      const blRows = [
+        ["Source URL", "Target URL", "Anchor Text", "DA", "Type", "Status"],
+        ...(report.backlinks ?? []).map(b => [b.source_url, b.target_url, b.anchor_text ?? "", b.da ?? "", b.type ?? "", b.status ?? "live"]),
+      ];
+      const wsBl = XLSX.utils.aoa_to_sheet(blRows);
+      wsBl["!cols"] = [{ wch: 40 }, { wch: 30 }, { wch: 20 }, { wch: 6 }, { wch: 12 }, { wch: 8 }];
+      XLSX.utils.book_append_sheet(wb, wsBl, "Backlinks");
+    }
+
+    // Sheet 8: Competitors
+    if ((report.competitors ?? []).length > 0) {
+      const compRows = [
+        ["Name", "Website", "DA", "Keywords", "Notes"],
+        ...(report.competitors ?? []).map(c => [c.name, c.website, c.da ?? "", c.keywords ?? "", c.notes ?? ""]),
+      ];
+      const wsComp = XLSX.utils.aoa_to_sheet(compRows);
+      wsComp["!cols"] = [{ wch: 20 }, { wch: 30 }, { wch: 6 }, { wch: 10 }, { wch: 40 }];
+      XLSX.utils.book_append_sheet(wb, wsComp, "Competitors");
+    }
+
+    // Sheet 9: Rank History
+    if ((report.rank_history ?? []).length > 0) {
+      const rhRows = [
+        ["Keyword", "Month", "Year", "Position", "URL"],
+        ...(report.rank_history ?? []).map(rh => [rh.keyword, rh.month, rh.year, rh.position, rh.url ?? ""]),
+      ];
+      const wsRh = XLSX.utils.aoa_to_sheet(rhRows);
+      wsRh["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 40 }];
+      XLSX.utils.book_append_sheet(wb, wsRh, "Rank History");
+    }
 
     XLSX.writeFile(wb, `SEO-Report-${client.name}-${report.month}-${report.year}.xlsx`);
   };
@@ -395,18 +476,77 @@ export default function ReportViewPage() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          @page { margin: 1.5cm 1.8cm; size: A4; }
-          @page :first { margin-top: 0; }
-          body { font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { margin: 0; size: A4; }
+          body { 
+            font-family: 'Inter', sans-serif;
+            font-size: 11px; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+            background: white !important;
+          }
+          .print-container { padding: 1.5cm 1.8cm; }
           .print-break { page-break-before: always; break-before: page; }
           .print-avoid-break { page-break-inside: avoid; break-inside: avoid; }
-          * { box-shadow: none !important; }
-          .bg-gradient-to-br { background: #1e293b !important; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 10px; }
-          .recharts-wrapper { page-break-inside: avoid; break-inside: avoid; }
+          
+          /* Cover Page */
+          .cover-page {
+            height: 297mm;
+            width: 210mm;
+            background: #0f172a !important;
+            color: white !important;
+            display: flex !important;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2cm;
+            page-break-after: always;
+          }
+          .cover-page h1 { font-size: 48px; font-weight: 900; margin-bottom: 8px; }
+          .cover-page h2 { font-size: 24px; color: #3b82f6; margin-bottom: 40px; }
+          .cover-page .client-box { background: rgba(255,255,255,0.05); padding: 32px; border-radius: 24px; width: 100%; max-width: 500px; border: 1px solid rgba(255,255,255,0.1); }
+          
+          table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+          th { background: #f8fafc !important; color: #64748b !important; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; }
+          td { border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 10px; }
+          
+          .card { border: 1px solid #e2e8f0 !important; border-radius: 16px !important; margin-bottom: 16px !important; box-shadow: none !important; }
+          .invoice-only { display: none !important; }
         }
+        @media print {
+          .invoice-mode .report-body, .invoice-mode .cover-page { display: none !important; }
+          .invoice-mode .invoice-only { display: block !important; padding: 2cm; }
+        }
+        .cover-page { display: none; }
       `}</style>
+
+      {/* Cover Page (Print Only) */}
+      <div className="cover-page">
+        <div className="mb-20">
+          {agency.logo_url ? (
+            <img src={agency.logo_url} alt={agency.agency_name} className="h-16 w-auto mx-auto mb-6" />
+          ) : (
+            <div className="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-3xl font-black mx-auto mb-6 shadow-xl shadow-blue-500/20">
+              {agency.agency_name?.slice(0, 2).toUpperCase() || "SR"}
+            </div>
+          )}
+          <p className="text-blue-400 font-black tracking-widest uppercase text-sm">{agency.agency_name || "SEO REPORT PAD"}</p>
+        </div>
+        
+        <h1>SEO Performance Report</h1>
+        <h2>{report.month} {report.year}</h2>
+        
+        <div className="client-box">
+          <p className="text-slate-400 text-xs uppercase tracking-widest font-bold mb-4">Prepared for</p>
+          <p className="text-3xl font-black text-white mb-2">{client.name}</p>
+          <p className="text-blue-400 font-medium">{client.website}</p>
+        </div>
+
+        <div className="mt-auto pt-20 text-slate-500 text-xs">
+          <p>© {new Date().getFullYear()} {agency.agency_name}. All rights reserved.</p>
+          <p className="mt-1">Generated by SEO Report Pad</p>
+        </div>
+      </div>
 
       {/* Top bar */}
       <div className="no-print flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -432,6 +572,22 @@ export default function ReportViewPage() {
           </button>
           <button onClick={() => window.print()} className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors">
             <Download size={15} /> PDF
+          </button>
+          <button onClick={() => { document.body.classList.add("invoice-mode"); setInvoiceModal(true); }} className="flex items-center gap-2 border border-slate-200 bg-white text-indigo-700 px-3.5 py-2 rounded-xl text-sm hover:bg-indigo-50 transition-colors shadow-sm">
+            <ReceiptText size={15} /> Invoice
+          </button>
+          <button 
+            onClick={() => {
+              if (!portalLink) {
+                alert("Please generate a Client Link first!");
+                return;
+              }
+              const text = encodeURIComponent(`Hi ${client.name}, here is your SEO Report for ${report.month} ${report.year}: ${portalLink}`);
+              window.open(`https://wa.me/?text=${text}`, "_blank");
+            }}
+            className="flex items-center gap-2 border border-slate-200 bg-white text-green-600 px-3.5 py-2 rounded-xl text-sm hover:bg-green-50 transition-colors shadow-sm"
+          >
+            <MessageCircle size={15} /> WhatsApp
           </button>
           <button onClick={generatePortalLink} disabled={portalLoading}
             className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
@@ -460,7 +616,7 @@ export default function ReportViewPage() {
       )}
 
       {/* Report body */}
-      <div className="max-w-4xl mx-auto space-y-5">
+      <div className="report-body max-w-4xl mx-auto space-y-5 pb-20">
 
         {/* Hero header */}
         <div className="print-avoid-break rounded-2xl overflow-hidden">
@@ -508,76 +664,76 @@ export default function ReportViewPage() {
           </div>
         </div>
 
-        {/* SEO Score Summary Dashboard */}
-        {(() => {
-          const scores = [
-            { label: "On-Page SEO", score: report.on_page_seo?.on_page_score, color: "#3b82f6" },
-            { label: "Local SEO", score: report.local_seo?.local_seo_score, color: "#10b981" },
-            { label: "Schema", score: report.schema_seo?.schema_score ? parseInt(report.schema_seo.schema_score) : undefined, color: "#8b5cf6" },
-            { label: "Technical", score: report.technical_seo?.technical_score ? parseInt(report.technical_seo.technical_score) : undefined, color: "#f59e0b" },
-          ].filter(s => s.score != null);
-          const trafficChange = m?.organic_traffic != null && m?.prev_traffic != null
-            ? Math.round(((m.organic_traffic - m.prev_traffic) / (m.prev_traffic || 1)) * 100) : null;
-          const klImproved = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking < k.prev_ranking).length;
-          const klWorsened = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking > k.prev_ranking).length;
-          const workTotal = (report.work_done ?? []).length;
-          if (scores.length === 0 && trafficChange == null && workTotal === 0) return null;
-          return (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
-              <h2 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
-                <Activity size={18} className="text-blue-500" /> SEO Performance Summary
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {trafficChange != null && (
-                  <div className={`rounded-xl p-4 text-center ${trafficChange >= 0 ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100"}`}>
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      {trafficChange >= 0 ? <ArrowUpRight size={16} className="text-green-600" /> : <ArrowDownRight size={16} className="text-red-500" />}
-                      <span className={`text-2xl font-black ${trafficChange >= 0 ? "text-green-600" : "text-red-500"}`}>{trafficChange >= 0 ? "+" : ""}{trafficChange}%</span>
-                    </div>
-                    <p className="text-xs font-medium text-slate-500">Traffic Change</p>
-                  </div>
-                )}
-                {klImproved + klWorsened > 0 && (
-                  <div className="rounded-xl p-4 text-center bg-blue-50 border border-blue-100">
-                    <span className="text-2xl font-black text-blue-600">{klImproved}/{(report.keywords ?? []).length}</span>
-                    <p className="text-xs font-medium text-slate-500 mt-1">Keywords Improved</p>
-                  </div>
-                )}
-                {workTotal > 0 && (
-                  <div className="rounded-xl p-4 text-center bg-violet-50 border border-violet-100">
-                    <span className="text-2xl font-black text-violet-600">{workTotal}</span>
-                    <p className="text-xs font-medium text-slate-500 mt-1">Tasks Completed</p>
-                  </div>
-                )}
-                {(report.on_page_seo?.issues_fixed != null || report.technical_seo?.issues_fixed) && (
-                  <div className="rounded-xl p-4 text-center bg-emerald-50 border border-emerald-100">
-                    <span className="text-2xl font-black text-emerald-600">
-                      {(report.on_page_seo?.issues_fixed ?? 0) + (report.technical_seo?.issues_fixed ? parseInt(String(report.technical_seo.issues_fixed)) : 0)}
-                    </span>
-                    <p className="text-xs font-medium text-slate-500 mt-1">Issues Fixed</p>
-                  </div>
-                )}
-              </div>
-              {scores.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Category Scores</p>
-                  {scores.map(s => (
-                    <div key={s.label} className="flex items-center gap-3">
-                      <span className="text-sm text-slate-600 w-24 shrink-0">{s.label}</span>
-                      <div className="flex-1 bg-slate-100 rounded-full h-2.5">
-                        <div className="h-2.5 rounded-full transition-all" style={{ width: `${s.score}%`, background: s.color }} />
-                      </div>
-                      <span className="text-sm font-bold text-slate-700 w-10 text-right">{s.score}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-20 text-center ${Number(s.score) >= 80 ? "bg-green-100 text-green-700" : Number(s.score) >= 60 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
-                        {Number(s.score) >= 80 ? "Excellent" : Number(s.score) >= 60 ? "Good" : "Needs Work"}
-                      </span>
-                    </div>
-                  ))}
+        {/* Monthly Performance Highlights */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm print-avoid-break flex flex-col">
+            <h2 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <Activity size={18} className="text-blue-500" />
+              SEO Category Scores
+            </h2>
+            {(() => {
+              const scores = [
+                { subject: "On-Page", A: report.on_page_seo?.on_page_score ?? 0, fullMark: 100 },
+                { subject: "Local", A: report.local_seo?.local_seo_score ?? 0, fullMark: 100 },
+                { subject: "Technical", A: report.technical_seo?.technical_score ? Number(report.technical_seo.technical_score) : 0, fullMark: 100 },
+                { subject: "Schema", A: report.schema_seo?.schema_score ? Number(report.schema_seo.schema_score) : 0, fullMark: 100 },
+              ];
+              return (
+                <div className="flex-1 min-h-[260px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={scores}>
+                      <PolarGrid stroke="#f1f5f9" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar name="Score" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} />
+                    </RadarChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
+              );
+            })()}
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <BarChart3 size={18} className="text-blue-500" />
+              Monthly Growth Overview
+            </h2>
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Traffic Improvement</span>
+                  <span className={`text-sm font-black ${m?.organic_traffic && m?.prev_traffic && m.organic_traffic > m.prev_traffic ? "text-green-600" : "text-slate-600"}`}>
+                    {m?.organic_traffic && m?.prev_traffic 
+                      ? `${Math.round(((m.organic_traffic - m.prev_traffic) / m.prev_traffic) * 100)}%`
+                      : "—"}
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, (m?.organic_traffic || 0) / ((m?.prev_traffic || 1) / 100))}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Backlink Expansion</span>
+                  <span className="text-sm font-black text-slate-600">+{m?.backlinks && m?.prev_backlinks ? m.backlinks - m.prev_backlinks : 0}</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-teal-500 rounded-full" style={{ width: `${Math.min(100, (m?.backlinks || 0) / ((m?.prev_backlinks || 1) / 100))}%` }} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-xs text-slate-400 mb-0.5">Keywords Improved</p>
+                  <p className="text-xl font-black text-slate-700">{improved}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-xs text-slate-400 mb-0.5">Top 10 Keywords</p>
+                  <p className="text-xl font-black text-slate-700">{top10}</p>
+                </div>
+              </div>
             </div>
-          );
-        })()}
+          </div>
+        </div>
 
         {/* Metrics grid */}
         {m && (
@@ -609,55 +765,45 @@ export default function ReportViewPage() {
                     <Bar dataKey="Curr" name="Current" fill="#3b82f6" radius={[6,6,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-            )}
 
-            {/* Before / After Comparison */}
-            {(m.organic_traffic != null || m.backlinks != null || m.domain_authority != null) && (m.prev_traffic != null || m.prev_backlinks != null || m.prev_da != null) && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
-                <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
-                  <Target size={16} className="text-blue-500" /> Before vs After
-                </h2>
-                <div className="space-y-4">
+                <div className="grid md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-50">
                   {m.organic_traffic != null && m.prev_traffic != null && (() => {
                     const pct = m.prev_traffic > 0 ? Math.round(((m.organic_traffic - m.prev_traffic) / m.prev_traffic) * 100) : 0;
-                    const improved = pct >= 0;
                     return (
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-slate-600">Organic Traffic</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${improved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{improved ? "+" : ""}{pct}%</span>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Traffic Growth</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${pct >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{pct >= 0 ? "+" : ""}{pct}%</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
-                            <p className="text-xs text-slate-400 mb-1">Before</p>
-                            <p className="text-xl font-black text-slate-500">{m.prev_traffic.toLocaleString()}</p>
+                        <div className="flex justify-between items-end">
+                          <div className="text-left">
+                            <p className="text-[9px] text-slate-400">Before</p>
+                            <p className="text-sm font-bold text-slate-500">{m.prev_traffic.toLocaleString()}</p>
                           </div>
-                          <div className={`rounded-xl p-3 text-center border ${improved ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
-                            <p className={`text-xs mb-1 ${improved ? "text-green-500" : "text-red-400"}`}>After</p>
-                            <p className={`text-xl font-black ${improved ? "text-green-600" : "text-red-500"}`}>{m.organic_traffic.toLocaleString()}</p>
+                          <div className="text-right">
+                            <p className="text-[9px] text-blue-400">After</p>
+                            <p className="text-sm font-black text-blue-600">{m.organic_traffic.toLocaleString()}</p>
                           </div>
                         </div>
                       </div>
                     );
                   })()}
                   {m.backlinks != null && m.prev_backlinks != null && (() => {
-                    const pct = m.prev_backlinks > 0 ? Math.round(((m.backlinks - m.prev_backlinks) / m.prev_backlinks) * 100) : 0;
-                    const improved = pct >= 0;
+                    const diff = m.backlinks - m.prev_backlinks;
                     return (
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-slate-600">Backlinks</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${improved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{improved ? "+" : ""}{pct}%</span>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">New Backlinks</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${diff >= 0 ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>{diff >= 0 ? "+" : ""}{diff}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
-                            <p className="text-xs text-slate-400 mb-1">Before</p>
-                            <p className="text-xl font-black text-slate-500">{m.prev_backlinks.toLocaleString()}</p>
+                        <div className="flex justify-between items-end">
+                          <div className="text-left">
+                            <p className="text-[9px] text-slate-400">Before</p>
+                            <p className="text-sm font-bold text-slate-500">{m.prev_backlinks.toLocaleString()}</p>
                           </div>
-                          <div className={`rounded-xl p-3 text-center border ${improved ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
-                            <p className={`text-xs mb-1 ${improved ? "text-green-500" : "text-red-400"}`}>After</p>
-                            <p className={`text-xl font-black ${improved ? "text-green-600" : "text-red-500"}`}>{m.backlinks.toLocaleString()}</p>
+                          <div className="text-right">
+                            <p className="text-[9px] text-teal-400">After</p>
+                            <p className="text-sm font-black text-teal-600">{m.backlinks.toLocaleString()}</p>
                           </div>
                         </div>
                       </div>
@@ -666,44 +812,19 @@ export default function ReportViewPage() {
                   {m.domain_authority != null && m.prev_da != null && (() => {
                     const diff = m.domain_authority - m.prev_da;
                     return (
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-slate-600">Domain Authority</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${diff >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{diff >= 0 ? "+" : ""}{diff}</span>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">DA Authority</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${diff >= 0 ? "bg-violet-100 text-violet-700" : "bg-red-100 text-red-700"}`}>{diff >= 0 ? "+" : ""}{diff}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
-                            <p className="text-xs text-slate-400 mb-1">Before</p>
-                            <p className="text-xl font-black text-slate-500">{m.prev_da}</p>
+                        <div className="flex justify-between items-end">
+                          <div className="text-left">
+                            <p className="text-[9px] text-slate-400">Before</p>
+                            <p className="text-sm font-bold text-slate-500">{m.prev_da}</p>
                           </div>
-                          <div className={`rounded-xl p-3 text-center border ${diff >= 0 ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
-                            <p className={`text-xs mb-1 ${diff >= 0 ? "text-green-500" : "text-red-400"}`}>After</p>
-                            <p className={`text-xl font-black ${diff >= 0 ? "text-green-600" : "text-red-500"}`}>{m.domain_authority}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {/* Keyword improvement overview */}
-                  {(report.keywords ?? []).length > 0 && (() => {
-                    const improved = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking < k.prev_ranking).length;
-                    const worsened = (report.keywords ?? []).filter(k => k.curr_ranking != null && k.prev_ranking != null && k.curr_ranking > k.prev_ranking).length;
-                    const unchanged = (report.keywords ?? []).length - improved - worsened;
-                    return (
-                      <div>
-                        <p className="text-sm text-slate-600 mb-2">Keyword Movement</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-center">
-                            <p className="text-xl font-black text-green-600">{improved}</p>
-                            <p className="text-xs text-green-500 font-medium">Improved ↑</p>
-                          </div>
-                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                            <p className="text-xl font-black text-slate-500">{unchanged}</p>
-                            <p className="text-xs text-slate-400 font-medium">Stable →</p>
-                          </div>
-                          <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
-                            <p className="text-xl font-black text-red-500">{worsened}</p>
-                            <p className="text-xs text-red-400 font-medium">Declined ↓</p>
+                          <div className="text-right">
+                            <p className="text-[9px] text-violet-400">After</p>
+                            <p className="text-sm font-black text-violet-600">{m.domain_authority}</p>
                           </div>
                         </div>
                       </div>
@@ -1517,6 +1638,136 @@ export default function ReportViewPage() {
           </div>
         )}
 
+        {/* Keyword Rank History Chart */}
+        {(report.rank_history ?? []).length > 0 && (() => {
+          // Group by keyword, build month-series
+          const byKeyword: Record<string, { month: string; position: number }[]> = {};
+          (report.rank_history ?? []).forEach(rh => {
+            if (!byKeyword[rh.keyword]) byKeyword[rh.keyword] = [];
+            byKeyword[rh.keyword].push({ month: `${rh.month} ${rh.year}`, position: rh.position });
+          });
+          const keywords = Object.keys(byKeyword).slice(0, 5); // top 5
+          // Build chart data: each row = one month, columns = keywords
+          const monthSet = [...new Set((report.rank_history ?? []).map(rh => `${rh.month} ${rh.year}`))];
+          const chartData = monthSet.map(m => {
+            const row: Record<string, string | number> = { month: m };
+            keywords.forEach(kw => {
+              const entry = byKeyword[kw]?.find(e => e.month === m);
+              if (entry) row[kw] = entry.position;
+            });
+            return row;
+          });
+          const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <h2 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
+                <TrendingUp size={16} className="text-blue-500" /> Keyword Rank History
+              </h2>
+              <p className="text-xs text-slate-400 mb-4">Position trends for top tracked keywords (lower = better)</p>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <YAxis reversed tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} label={{ value: "Position", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#94a3b8" } }} />
+                  <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,.1)", fontSize: "12px" }} />
+                  <Legend wrapperStyle={{ fontSize: "11px" }} />
+                  {keywords.map((kw, i) => (
+                    <Line key={kw} type="monotone" dataKey={kw} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} name={kw} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })()}
+
+        {/* Daily Work Logs */}
+        {(report.work_logs ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Daily Work Log — {report.month} {report.year}
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Date</th>
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Category</th>
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Task</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.work_logs ?? []).map(log => (
+                    <tr key={log.id} className="border-b border-slate-50">
+                      <td className="py-2.5 text-slate-600 whitespace-nowrap">{new Date(log.log_date).toLocaleDateString()}</td>
+                      <td className="py-2.5"><span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">{log.category}</span></td>
+                      <td className="py-2.5 text-slate-700">{log.task}</td>
+                      <td className="py-2.5 text-center"><span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">{log.status ?? "done"}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Backlinks */}
+        {(report.backlinks ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
+              <Link2 size={16} className="text-indigo-500" /> Backlink Profile
+            </h2>
+            <p className="text-xs text-slate-400 mb-4">{(report.backlinks ?? []).length} total backlinks tracked</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Source</th>
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Target</th>
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Anchor</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium">DA</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.backlinks ?? []).slice(0, 15).map(bl => (
+                    <tr key={bl.id} className="border-b border-slate-50">
+                      <td className="py-2.5 max-w-[200px] truncate"><a href={bl.source_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-xs">{bl.source_url.replace(/^https?:\/\//, "")}</a></td>
+                      <td className="py-2.5 max-w-[150px] truncate text-xs text-slate-500">{bl.target_url.replace(/^https?:\/\//, "")}</td>
+                      <td className="py-2.5 text-xs text-slate-600">{bl.anchor_text ?? "—"}</td>
+                      <td className="py-2.5 text-center"><span className={`text-xs font-bold ${(bl.da ?? 0) >= 40 ? "text-green-600" : (bl.da ?? 0) >= 20 ? "text-amber-600" : "text-slate-400"}`}>{bl.da ?? "—"}</span></td>
+                      <td className="py-2.5 text-center"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${bl.status === "live" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>{bl.status ?? "live"}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Competitors */}
+        {(report.competitors ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <Target size={16} className="text-orange-500" /> Competitor Analysis
+            </h2>
+            <div className="grid md:grid-cols-2 gap-3">
+              {(report.competitors ?? []).map(comp => (
+                <div key={comp.id} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-slate-800 text-sm">{comp.name}</h3>
+                    {comp.da != null && <span className="text-xs font-bold bg-white border border-slate-200 px-2 py-0.5 rounded-full text-slate-600">DA {comp.da}</span>}
+                  </div>
+                  <a href={comp.website} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">{comp.website}</a>
+                  {comp.keywords != null && <p className="text-xs text-slate-400 mt-1">{comp.keywords} keywords tracked</p>}
+                  {comp.notes && <p className="text-xs text-slate-500 mt-2 leading-relaxed">{comp.notes}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="rounded-2xl p-5 text-center" style={{ background: agency.primary_color || "#1e293b" }}>
           <p className="text-sm font-bold text-white">{agency.agency_name || "SEO Report Manager"}</p>
@@ -1586,6 +1837,131 @@ export default function ReportViewPage() {
           </div>
         </div>
       )}
+      {/* Invoice Modal */}
+      {invoiceModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 no-print p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">Generate Monthly Invoice</h2>
+              <button onClick={() => { document.body.classList.remove("invoice-mode"); setInvoiceModal(false); }} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Invoice #</label>
+                <input value={invoiceForm.number} onChange={e => setInvoiceForm({...invoiceForm, number: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Date</label>
+                <input type="date" value={invoiceForm.date} onChange={e => setInvoiceForm({...invoiceForm, date: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Currency</label>
+                <input value={invoiceForm.currency} onChange={e => setInvoiceForm({...invoiceForm, currency: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
+                <input value={invoiceForm.description} onChange={e => setInvoiceForm({...invoiceForm, description: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm" />
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="text-xs font-bold text-slate-500 uppercase block mb-2">Line Items</label>
+              {invoiceForm.items.map((item, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <input placeholder="Service" value={item.desc} onChange={e => {
+                    const newItems = [...invoiceForm.items];
+                    newItems[idx].desc = e.target.value;
+                    setInvoiceForm({...invoiceForm, items: newItems});
+                  }} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                  <input type="number" placeholder="Price" value={item.price} onChange={e => {
+                    const newItems = [...invoiceForm.items];
+                    newItems[idx].price = Number(e.target.value);
+                    setInvoiceForm({...invoiceForm, items: newItems});
+                  }} className="w-24 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                  <button onClick={() => {
+                    const newItems = invoiceForm.items.filter((_, i) => i !== idx);
+                    setInvoiceForm({...invoiceForm, items: newItems});
+                  }} className="text-red-500 p-2"><XCircle size={18} /></button>
+                </div>
+              ))}
+              <button onClick={() => setInvoiceForm({...invoiceForm, items: [...invoiceForm.items, { desc: "", qty: 1, price: 0 }]})} className="text-xs font-bold text-indigo-600 hover:underline">+ Add Item</button>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => { window.print(); }} className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                <Download size={18} /> Print / Save Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Invoice (hidden on screen, shows on print when in invoice-mode) */}
+      <div className="invoice-only p-12 bg-white min-h-screen text-slate-900">
+        <div className="flex justify-between items-start mb-12">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 mb-2">INVOICE</h1>
+            <p className="text-slate-500">#{invoiceForm.number}</p>
+          </div>
+          <div className="text-right">
+            <h2 className="text-xl font-bold">{agency.agency_name}</h2>
+            <p className="text-sm text-slate-500">{client.company || "SEO Services"}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-12 mb-12">
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Bill To</p>
+            <p className="font-bold text-lg">{client.name}</p>
+            <p className="text-slate-500">{client.email}</p>
+            <p className="text-slate-500">{client.website}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Details</p>
+            <p className="text-slate-500">Date: <span className="text-slate-900 font-medium">{invoiceForm.date}</span></p>
+            <p className="text-slate-500">Description: <span className="text-slate-900 font-medium">{invoiceForm.description}</span></p>
+          </div>
+        </div>
+
+        <table className="w-full mb-12">
+          <thead>
+            <tr className="border-b-2 border-slate-100">
+              <th className="py-4 text-left text-xs font-bold text-slate-400 uppercase">Description</th>
+              <th className="py-4 text-right text-xs font-bold text-slate-400 uppercase">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceForm.items.map((item, i) => (
+              <tr key={i} className="border-b border-slate-50">
+                <td className="py-5 font-medium">{item.desc}</td>
+                <td className="py-5 text-right font-bold">{invoiceForm.currency}{item.price.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="flex justify-end">
+          <div className="w-64 bg-slate-50 rounded-2xl p-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-500">Subtotal</span>
+              <span className="font-bold">{invoiceForm.currency}{invoiceForm.items.reduce((acc, curr) => acc + curr.price, 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center border-t border-slate-200 pt-4 mt-4">
+              <span className="text-lg font-bold">Total</span>
+              <span className="text-2xl font-black text-indigo-600">{invoiceForm.currency}{invoiceForm.items.reduce((acc, curr) => acc + curr.price, 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-20 pt-8 border-t border-slate-100 text-center">
+          {agency.logo_url && <img src={agency.logo_url} alt={agency.agency_name} className="h-6 w-auto mx-auto mb-4 grayscale opacity-30" />}
+          <p className="text-sm text-slate-400">Thank you for your business! Please pay within 15 days.</p>
+          <p className="text-xs text-slate-300 mt-2">Generated by {agency.agency_name} SEO Portal</p>
+        </div>
+      </div>
     </>
   );
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserClient } from "@/lib/auth";
-import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +9,12 @@ export async function POST(req: NextRequest) {
 
     const { reportId } = await req.json();
     if (!reportId) return NextResponse.json({ error: "reportId required" }, { status: 400 });
+
+    // Fetch agency settings for API key
+    const { data: agency } = await sb.from("agency_settings").select("gemini_api_key").eq("user_id", user.id).maybeSingle();
+    const apiKey = agency?.gemini_api_key || process.env.GEMINI_API_KEY;
+
+    if (!apiKey) return NextResponse.json({ error: "AI not configured. Please add Gemini API Key in Settings." }, { status: 503 });
 
     const { data: report } = await sb
       .from("reports")
@@ -53,20 +58,23 @@ Write a professional, client-friendly 3-paragraph executive summary (150-200 wor
 Paragraph 1: Overall performance snapshot highlighting the most impressive metric.
 Paragraph 2: What work was done and its impact.
 Paragraph 3: Forward-looking — what to focus on next month.
-Use confident, positive language. Be specific with numbers. Do NOT use headers or bullet points.`;
+Use confident, positive language. Be specific with numbers. Do NOT use headers or bullet points. Output ONLY the summary text.`;
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "AI not configured" }, { status: 503 });
-
-    const anthropic = new Anthropic({ apiKey });
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 400,
-      messages: [{ role: "user", content: prompt }],
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
     });
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
-    return NextResponse.json({ summary: text });
+    const result = await response.json();
+    if (result.error) return NextResponse.json({ error: result.error.message }, { status: 400 });
+
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return NextResponse.json({ summary: text.trim() });
   } catch (e: unknown) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

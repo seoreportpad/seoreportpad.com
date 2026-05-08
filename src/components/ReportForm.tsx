@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2, ListPlus, TrendingUp, Activity } from "lucide-react";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const WORK_CATEGORIES = ["On-Page SEO","Technical SEO","Link Building","Content","Local SEO","Reporting","Other"];
@@ -98,7 +98,7 @@ interface TechnicalSEO {
   gsc_coverage_errors: string; gsc_manual_actions: string; gsc_enhancement_errors: string;
   technical_score: string; issues_found: string; issues_fixed: string; notes: string;
 }
-interface Client { id: string; name: string; }
+interface Client { id: string; name: string; website?: string; }
 
 interface Props {
   reportId?: string;
@@ -266,6 +266,72 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
   const [importLogs, setImportLogs] = useState<{ id: string; log_date: string; category: string; task: string }[]>([]);
   const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
   const [importLoading, setImportLoading] = useState(false);
+  const [bulkKeywordModal, setBulkKeywordModal] = useState(false);
+  const [bulkKeywordText, setBulkKeywordText] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
+
+  const runLiveAudit = async () => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client?.website) return alert("Selected client does not have a website URL set.");
+    
+    setAuditLoading(true);
+    try {
+      const res = await fetch("/api/audit/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: client.website }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      // Auto-fill some fields
+      op("title_tag", data.title);
+      op("meta_description", data.description);
+      op("h1_text", data.h1);
+      op("title_length", String(data.checks.titleLength));
+      op("meta_length", String(data.checks.descLength));
+      
+      if (!onPage.notes) {
+        op("notes", `Live Audit Results for ${client.website}:\n- Title: ${data.title}\n- H1: ${data.h1}\n- Description: ${data.description}\n\nChecks:\n- Missing Meta Description: ${data.checks.hasDescription ? "No" : "Yes"}\n- Missing H1: ${data.checks.hasH1 ? "No" : "Yes"}`);
+      }
+      
+      // Update technical checkboxes
+      op("canonical_set", data.checks.hasCanonical);
+      op("robots_txt_ok", data.robots.toLowerCase().includes("index"));
+      
+      alert("Live audit complete! Meta tags have been auto-filled in the On-Page section.");
+    } catch (e: any) {
+      alert("Audit failed: " + e.message);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  const refreshRankings = async () => {
+    if (!clientId) return alert("Please select a client first");
+    setRefreshing(true);
+    try {
+      // Mocking API call to Serper or ZenSerp
+      await new Promise(r => setTimeout(r, 2000));
+      
+      setKeywords(current => current.map(k => {
+        if (!k.keyword) return k;
+        // Mock random improvement/drop
+        const curr = parseInt(k.curr_ranking) || 10;
+        const roll = Math.random();
+        let next = curr;
+        if (roll > 0.6) next = Math.max(1, curr - Math.floor(Math.random() * 3)); // Improve
+        else if (roll < 0.2) next = curr + Math.floor(Math.random() * 2); // Drop
+        
+        return { ...k, curr_ranking: String(next) };
+      }));
+      
+      alert("Rankings updated! (Mock data for demonstration)");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/clients")
@@ -314,6 +380,24 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
   const removeKeyword = (i: number) => setKeywords(keywords.filter((_, idx) => idx !== i));
   const updateKeyword = (i: number, k: keyof Keyword, v: string) =>
     setKeywords(keywords.map((kw, idx) => idx === i ? { ...kw, [k]: v } : kw));
+
+  const applyBulkKeywords = () => {
+    const lines = bulkKeywordText.split("\n").filter(l => l.trim());
+    const newKws: Keyword[] = lines.map(line => {
+      // Try to parse CSV format like "Keyword, 10, 5, 1000, url"
+      const parts = line.split(",").map(p => p.trim());
+      return {
+        keyword: parts[0] || "",
+        prev_ranking: parts[1] || "",
+        curr_ranking: parts[2] || "",
+        search_volume: parts[3] || "",
+        url: parts[4] || "",
+      };
+    });
+    setKeywords(prev => [...prev.filter(k => k.keyword), ...newKws]);
+    setBulkKeywordText("");
+    setBulkKeywordModal(false);
+  };
 
   const addWork = () => setWorkDone([...workDone, { category: "On-Page SEO", task: "" }]);
   const removeWork = (i: number) => setWorkDone(workDone.filter((_, idx) => idx !== i));
@@ -565,11 +649,23 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
           <h2 className="font-semibold text-slate-700">Report Information</h2>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Client <span className="text-red-500">*</span></label>
-            <select required value={clientId} onChange={e => setClientId(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="">-- Select Client --</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <div className="flex gap-2">
+              <select required value={clientId} onChange={e => setClientId(e.target.value)}
+                className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <option value="">-- Select Client --</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button type="button" onClick={runLiveAudit} disabled={auditLoading || !clientId}
+                className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-2 disabled:opacity-50">
+                {auditLoading ? <Loader2 size={14} className="animate-spin" /> : <Activity size={14} />}
+                {auditLoading ? "Auditing..." : "Live Audit"}
+              </button>
+            </div>
+            {clientId && (
+              <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                Website: {clients.find(c => c.id === clientId)?.website || "Not set"}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1198,9 +1294,20 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-slate-700">Keyword Rankings</h2>
-            <button type="button" onClick={addKeyword} className="flex items-center gap-1.5 text-sm text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg">
-              <Plus size={14} /> Add Keyword
-            </button>
+            <div className="flex gap-2">
+              <button type="button" onClick={refreshRankings} disabled={refreshing}
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+                {refreshing ? <Loader2 size={14} className="animate-spin" /> : <TrendingUp size={14} />} 
+                {refreshing ? "Tracking..." : "Refresh Rankings"}
+              </button>
+              <button type="button" onClick={() => setBulkKeywordModal(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                <ListPlus size={14} /> Bulk Add
+              </button>
+              <button type="button" onClick={addKeyword} className="flex items-center gap-1.5 text-sm text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg">
+                <Plus size={14} /> Add Keyword
+              </button>
+            </div>
           </div>
           <div className="mb-3 grid grid-cols-12 gap-2 px-1">
             {["Keyword", "Prev Rank", "Curr Rank", "Volume", "URL", ""].map((h, i) => (
@@ -1354,6 +1461,30 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
         <button type="button" onClick={() => router.back()}
           className="px-6 py-2.5 rounded-xl text-sm border border-slate-200 hover:bg-slate-50 transition-colors">Cancel</button>
       </div>
+
+      {/* Bulk Keyword Modal */}
+      {bulkKeywordModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg">
+            <h2 className="text-xl font-bold text-slate-800 mb-2 font-outfit">Bulk Add Keywords</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Paste your keywords below. Format: <code className="bg-slate-100 px-1 rounded text-blue-600 font-bold">Keyword, Prev, Curr, Volume, URL</code> (one per line)
+            </p>
+            <textarea value={bulkKeywordText} onChange={e => setBulkKeywordText(e.target.value)} rows={10}
+              placeholder="SEO Agency, 10, 5, 1000, https://example.com/seo&#10;Backlink Service, 15, 12, 500, https://example.com/links"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 resize-none font-mono" />
+            <div className="flex gap-3 mt-6">
+              <button type="button" onClick={applyBulkKeywords}
+                className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-sm">
+                Add Keywords
+              </button>
+              <button type="button" onClick={() => setBulkKeywordModal(false)} className="px-6 py-2.5 border border-slate-200 rounded-xl font-semibold hover:bg-slate-50 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

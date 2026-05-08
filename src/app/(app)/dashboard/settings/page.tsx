@@ -2,14 +2,19 @@
 import { useState, useEffect } from "react";
 import {
   Save, User, Mail, CheckCircle, ExternalLink, Building2,
-  Users, Palette, Bell, Loader2, Trash2, UserPlus,
+  Users, Palette, Bell, Loader2, Trash2, UserPlus, Globe, AlertCircle,
+  Network, TrendingUp
 } from "lucide-react";
 
 interface TeamMember { id: string; member_email: string; role: string; status: string; }
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: "Muhammad Ismail", title: "SEO Specialist" });
-  const [agency, setAgency] = useState({ agency_name: "", logo_url: "", primary_color: "#2563eb", from_email: "" });
+  const [agency, setAgency] = useState({ 
+    agency_name: "", logo_url: "", primary_color: "#2563eb", 
+    from_email: "", gemini_api_key: "", email_subject: "", 
+    email_body: "", custom_domain: "" 
+  });
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [invite, setInvite] = useState({ email: "", role: "editor" });
 
@@ -178,6 +183,17 @@ export default function SettingsPage() {
                   placeholder="hello@myagency.com" type="email" className={inputCls} />
               </div>
             </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5 flex items-center gap-2">
+                Gemini API Key (Free AI)
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5">
+                  Get Free Key <ExternalLink size={10} />
+                </a>
+              </label>
+              <input value={agency.gemini_api_key} onChange={e => setAgency({ ...agency, gemini_api_key: e.target.value })}
+                placeholder="AIzaSy..." type="password" className={inputCls} />
+              <p className="text-[10px] text-slate-400 mt-1">Used for generating AI summaries in reports. 100% free via Google AI Studio.</p>
+            </div>
             {agency.agency_name && (
               <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black"
@@ -199,6 +215,94 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
+
+        {/* Email Templates */}
+        <form onSubmit={saveAgency} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          {sectionHeader(<Mail size={16} className="text-emerald-600" />, "Email Templates")}
+          <div className="p-6 space-y-4">
+            <p className="text-xs text-slate-500">Customize the email sent to clients when their report is ready. Use <code>{'{client_name}'}</code>, <code>{'{month}'}</code>, and <code>{'{year}'}</code> as variables.</p>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Email Subject</label>
+              <input value={agency.email_subject || ""} onChange={e => setAgency({ ...agency, email_subject: e.target.value })}
+                placeholder="{month} {year} SEO Report — {client_name}" className={inputCls} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Email Body (Intro)</label>
+              <textarea value={agency.email_body || ""} onChange={e => setAgency({ ...agency, email_body: e.target.value })}
+                rows={4} placeholder="Dear {client_name}, please find your monthly SEO report below..." 
+                className={`${inputCls} resize-none`} />
+            </div>
+            <button type="submit" disabled={agencyLoading}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm disabled:opacity-50 ${
+                agencySaved ? "bg-green-600 text-white" : "bg-emerald-600 text-white hover:bg-emerald-700"
+              }`}>
+              {agencyLoading ? <Loader2 size={15} className="animate-spin" /> : agencySaved ? <CheckCircle size={15} /> : <Save size={15} />}
+              {agencySaved ? "Saved!" : agencyLoading ? "Saving…" : "Save Template"}
+            </button>
+          </div>
+        </form>
+
+        {/* Custom Domain */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          {sectionHeader(<Globe size={16} className="text-blue-600" />, "Custom Domain (White-Label)")}
+          <div className="p-6 space-y-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle size={18} className="text-blue-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-blue-700 leading-relaxed">
+                <p className="font-bold mb-1">How to connect your domain:</p>
+                <p>1. Create a CNAME record in your DNS provider (e.g. Cloudflare, GoDaddy).</p>
+                <p>2. Point <code>reports.yourdomain.com</code> to <code>cname.seoreportpad.com</code>.</p>
+                <p>3. Enter your domain below and click verify.</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 block mb-1.5">Your Custom Domain</label>
+              <div className="flex gap-2">
+                <input value={agency.custom_domain || ""} onChange={e => setAgency({ ...agency, custom_domain: e.target.value })}
+                  placeholder="reports.myagency.com" className={inputCls} />
+                <button type="button" className="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors">
+                  Verify DNS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Integrations */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          {sectionHeader(<Network size={16} className="text-orange-600" />, "Google Integrations")}
+          <div className="p-6 space-y-4">
+            <p className="text-xs text-slate-500">Connect your Google account to automatically fetch traffic and keyword data from GSC and GA4.</p>
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
+                  <Globe size={20} className="text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-700">Google Search Console</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Status: Not Connected</p>
+                </div>
+              </div>
+              <button type="button" className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                Connect GSC
+              </button>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
+                  <TrendingUp size={20} className="text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-700">Google Analytics (GA4)</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Status: Not Connected</p>
+                </div>
+              </div>
+              <button type="button" className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                Connect GA4
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Team Members */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">

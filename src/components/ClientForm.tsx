@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, Globe, Mail, Phone, Building2, ArrowLeft, Save } from "lucide-react";
 
-interface ClientData { name: string; email: string; website: string; phone: string; company: string; }
+interface ClientData { name: string; email: string; website: string; phone: string; company: string; autoRoadmap?: boolean; monthly_retainer?: string; }
 interface Props { initial?: Partial<ClientData>; id?: string; }
 
 export default function ClientForm({ initial, id }: Props) {
@@ -11,6 +11,7 @@ export default function ClientForm({ initial, id }: Props) {
   const [form, setForm] = useState<ClientData>({
     name: initial?.name ?? "", email: initial?.email ?? "",
     website: initial?.website ?? "", phone: initial?.phone ?? "", company: initial?.company ?? "",
+    autoRoadmap: true, monthly_retainer: initial?.monthly_retainer ?? "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -29,6 +30,7 @@ export default function ClientForm({ initial, id }: Props) {
     { key: "email" as const, label: "Email Address", icon: Mail, type: "email", placeholder: "client@example.com", required: true },
     { key: "website" as const, label: "Website URL", icon: Globe, type: "url", placeholder: "https://example.com", required: true },
     { key: "phone" as const, label: "Phone Number", icon: Phone, type: "tel", placeholder: "+92 300 1234567", required: false },
+    { key: "monthly_retainer" as const, label: "Monthly Retainer ($)", icon: Save, type: "number", placeholder: "e.g. 500", required: false },
   ];
 
   return (
@@ -58,6 +60,23 @@ export default function ClientForm({ initial, id }: Props) {
               </div>
             </div>
           ))}
+
+          {!id && (
+            <div className="pt-2">
+              <label className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={form.autoRoadmap}
+                  onChange={e => setForm({ ...form, autoRoadmap: e.target.checked })}
+                  className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <div>
+                  <p className="text-sm font-bold text-blue-900">Auto-generate SEO Roadmap</p>
+                  <p className="text-[10px] text-blue-700 font-medium">Populate a 3-month strategy automatically (Technical, On-Page, Off-Page)</p>
+                </div>
+              </label>
+            </div>
+          )}
         </div>
 
         <div className="px-6 py-4 border-t border-slate-50 bg-slate-50/30 flex gap-3">

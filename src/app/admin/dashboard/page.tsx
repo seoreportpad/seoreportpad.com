@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Users, Search, RefreshCw, ChevronRight,
-  CheckCircle2, XCircle, Clock, Crown, Zap, UserX,
+  CheckCircle2, XCircle, Clock, Crown, Zap, UserX, UserPlus, Loader2
 } from "lucide-react";
 
 interface Subscription {
@@ -42,6 +42,12 @@ export default function AdminDashboardPage() {
   const [filterPlan, setFilterPlan] = useState("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "lastLogin">("newest");
 
+  // Add User State
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", password: "", agencyName: "" });
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+
   const load = async () => {
     setLoading(true);
     const res = await fetch("/api/admin/users");
@@ -49,6 +55,28 @@ export default function AdminDashboardPage() {
     const data = await res.json();
     setUsers(Array.isArray(data) ? data : []);
     setLoading(false);
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdding(true);
+    setAddError("");
+    try {
+      const res = await fetch("/api/admin/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create user");
+      setShowAddUser(false);
+      setNewUser({ email: "", password: "", agencyName: "" });
+      load(); // Refresh list
+    } catch (err: any) {
+      setAddError(err.message);
+    } finally {
+      setAdding(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -85,15 +113,21 @@ export default function AdminDashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-black text-white">Users</h1>
           <p className="text-slate-500 text-sm mt-1">{users.length} total accounts</p>
         </div>
-        <button onClick={load} disabled={loading}
-          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-sm font-medium transition-colors border border-slate-700">
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowAddUser(true)}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <UserPlus size={16} /> Add User
+          </button>
+          <button onClick={load} disabled={loading}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-sm font-medium transition-colors border border-slate-700">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stat pills */}
@@ -195,6 +229,41 @@ export default function AdminDashboardPage() {
               <ChevronRight size={15} className="text-slate-700 group-hover:text-slate-400 transition-colors shrink-0" />
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-white mb-4">Add New User</h2>
+            {addError && <p className="text-red-400 text-sm mb-4 bg-red-900/30 p-3 rounded-lg border border-red-800">{addError}</p>}
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Email *</label>
+                <input required type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Password *</label>
+                <input required type="text" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} minLength={6}
+                  className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Agency Name (Optional)</label>
+                <input type="text" value={newUser.agencyName} onChange={e => setNewUser({ ...newUser, agencyName: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500" />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setShowAddUser(false)} disabled={adding}
+                  className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors">Cancel</button>
+                <button type="submit" disabled={adding || !newUser.email || !newUser.password}
+                  className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2">
+                  {adding ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : "Create User"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

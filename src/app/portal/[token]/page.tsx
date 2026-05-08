@@ -1,10 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { use } from "react";
 import {
   Globe, TrendingUp, TrendingDown, CheckCircle2, FileText,
   BarChart3, Link2, Calendar, ExternalLink, ChevronUp, ChevronDown,
+  Activity, Target, Layers, Shield,
 } from "lucide-react";
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend, RadarChart, Radar,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell,
+} from "recharts";
 
 interface PortalData {
   token: string;
@@ -21,7 +28,17 @@ interface PortalData {
       technical_fixed?: number; pages_indexed?: number;
       notes?: string; recommendations?: string;
     } | null;
+    on_page_seo?: { on_page_score?: number };
+    local_seo?: { local_seo_score?: number };
+    technical_seo?: { technical_score?: number };
+    schema_seo?: { schema_score?: string };
+    backlinks: { source_url: string; target_url: string; anchor_text?: string; da?: number; status?: string }[];
+    competitors: { name: string; website: string; da?: number; keywords?: string }[];
+    rank_history: { keyword: string; position: number; month: string; year: number }[];
+    agency: { agency_name: string; logo_url?: string; primary_color?: string } | null;
   };
+  history: { id: string; month: string; year: number; token: string }[];
+  tasks: { id: string; title: string; status: string; category: string }[];
 }
 
 function Diff({ curr, prev, reverse = false }: { curr?: number; prev?: number; reverse?: boolean }) {
@@ -113,38 +130,127 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
       <div className="bg-white border-b border-slate-100 sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <BarChart3 size={16} className="text-white" />
-            </div>
+            {r.agency?.logo_url ? (
+              <img src={r.agency.logo_url} alt={r.agency.agency_name} className="h-8 w-auto object-contain" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black" 
+                style={{ background: r.agency?.primary_color || "#2563eb" }}>
+                {r.agency?.agency_name?.slice(0, 2).toUpperCase() || "SR"}
+              </div>
+            )}
             <div>
-              <p className="text-xs text-slate-400">SEO Report</p>
+              <p className="text-xs text-slate-400">{r.agency?.agency_name || "SEO Report"}</p>
               <p className="text-sm font-bold text-slate-700">{client.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Calendar size={13} />
-            <span>{r.month} {r.year}</span>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+              <Calendar size={13} />
+              <span>{r.month} {r.year}</span>
+            </div>
+            
+            {data.history.length > 1 && (
+              <div className="relative group">
+                <button className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all">
+                  Report History <ChevronDown size={14} />
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 shadow-xl rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                   <div className="p-3 bg-slate-50 border-b border-slate-100">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Past Reports</p>
+                   </div>
+                   <div className="max-h-60 overflow-y-auto">
+                     {data.history.map(h => (
+                       <Link key={h.id} href={`/portal/${h.token}`} className={`block px-4 py-3 text-xs font-medium hover:bg-slate-50 transition-colors ${h.id === r.id ? "text-blue-600 bg-blue-50/50" : "text-slate-600"}`}>
+                         {h.month} {h.year} {h.id === r.id && "•"}
+                       </Link>
+                     ))}
+                   </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* Hero */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-8 text-white shadow-lg shadow-blue-200">
-          <p className="text-blue-200 text-sm font-semibold uppercase tracking-wide mb-1">Monthly SEO Report</p>
+        <div className="rounded-3xl p-8 text-white shadow-lg shadow-blue-100"
+          style={{ background: `linear-gradient(135deg, ${r.agency?.primary_color || "#2563eb"}, ${r.agency?.primary_color ? r.agency.primary_color + "dd" : "#1d4ed8"})` }}>
+          <p className="text-white/70 text-sm font-semibold uppercase tracking-wide mb-1">Monthly SEO Report</p>
           <h1 className="text-3xl font-black mb-1">{r.month} {r.year}</h1>
-          <p className="text-blue-200 text-base">{client.name}</p>
+          <p className="text-white/80 text-base">{client.name}</p>
           {client.website && (
             <a href={client.website} target="_blank" rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 text-blue-200 hover:text-white text-sm transition-colors">
+              className="mt-3 inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors">
               <Globe size={13} /> {client.website.replace(/^https?:\/\/(www\.)?/, "")}
               <ExternalLink size={11} />
             </a>
           )}
-          {client.company && <p className="text-blue-300 text-sm mt-1">{client.company}</p>}
+          {client.company && <p className="text-white/60 text-sm mt-1">{client.company}</p>}
         </div>
 
-        {/* Traffic Metrics */}
+        {/* SEO Scores Radar & Summary */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <h2 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <Activity size={16} className="text-blue-600" /> SEO Category Scores
+            </h2>
+            {(() => {
+              const scores = [
+                { subject: "On-Page", A: r.on_page_seo?.on_page_score ?? 0, fullMark: 100 },
+                { subject: "Local", A: r.local_seo?.local_seo_score ?? 0, fullMark: 100 },
+                { subject: "Technical", A: r.technical_seo?.technical_score ? Number(r.technical_seo.technical_score) : 0, fullMark: 100 },
+                { subject: "Schema", A: r.schema_seo?.schema_score ? Number(r.schema_seo.schema_score) : 0, fullMark: 100 },
+              ];
+              return (
+                <div className="h-[260px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={scores}>
+                      <PolarGrid stroke="#f1f5f9" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: "#64748b" }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar name="Score" dataKey="A" stroke="#2563eb" fill="#3b82f6" fillOpacity={0.5} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col">
+            <h2 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <TrendingUp size={16} className="text-green-600" /> Improvement Stats
+            </h2>
+            <div className="flex-1 space-y-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-xs text-slate-400">Monthly Traffic Growth</p>
+                  <p className="text-2xl font-black text-slate-800">
+                    {m?.organic_traffic && m?.prev_traffic 
+                      ? `${Math.round(((m.organic_traffic - m.prev_traffic) / (m.prev_traffic || 1)) * 100)}%`
+                      : "—"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400">Keywords in Top 10</p>
+                  <p className="text-2xl font-black text-slate-800">{top10}</p>
+                </div>
+              </div>
+              <div className="w-full bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Backlink Growth</p>
+                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, (m?.backlinks || 0) / ((m?.prev_backlinks || 1) / 100))}%` }} />
+                </div>
+                <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                  <span>PREV: {m?.prev_backlinks || 0}</span>
+                  <span className="text-blue-600">NOW: {m?.backlinks || 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Performance Metrics */}
         {m && (
           <div>
             <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
@@ -163,6 +269,49 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Rank History Trends */}
+        {r.rank_history.length > 0 && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <h2 className="font-bold text-slate-700 mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <TrendingUp size={16} className="text-blue-600" /> Keyword Position Trends
+            </h2>
+            {(() => {
+              const byKeyword: Record<string, { month: string; position: number }[]> = {};
+              r.rank_history.forEach(rh => {
+                if (!byKeyword[rh.keyword]) byKeyword[rh.keyword] = [];
+                byKeyword[rh.keyword].push({ month: `${rh.month} ${rh.year}`, position: rh.position });
+              });
+              const keywords = Object.keys(byKeyword).slice(0, 5);
+              const monthSet = [...new Set(r.rank_history.map(rh => `${rh.month} ${rh.year}`))];
+              const chartData = monthSet.map(m => {
+                const row: any = { month: m };
+                keywords.forEach(kw => {
+                  const entry = byKeyword[kw]?.find(e => e.month === m);
+                  if (entry) row[kw] = entry.position;
+                });
+                return row;
+              });
+              const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
+              return (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <YAxis reversed tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }} />
+                      <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "20px" }} />
+                      {keywords.map((kw, i) => (
+                        <Line key={kw} type="monotone" dataKey={kw} stroke={colors[i % colors.length]} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name={kw} />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -252,6 +401,96 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
           </div>
         )}
 
+        {/* Strategy Roadmap */}
+        {data.tasks.length > 0 && (
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                  <Activity size={24} className="text-blue-600" /> Strategy Roadmap
+                </h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">Real-time status of your SEO campaign</p>
+              </div>
+              <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                {["todo", "in-progress", "completed"].map(s => (
+                  <div key={s} className="px-4 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    {s.replace("-", " ")}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {(["todo", "in-progress", "completed"] as const).map(status => (
+                <div key={status} className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2 px-1">
+                    <span className={`w-2 h-2 rounded-full ${status === "completed" ? "bg-emerald-500" : status === "in-progress" ? "bg-amber-500" : "bg-slate-300"}`} />
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{status.replace("-", " ")}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {data.tasks.filter(t => t.status === status).map(task => (
+                      <div key={task.id} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 hover:border-slate-200 transition-colors">
+                         <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest block mb-2">{task.category}</span>
+                         <p className="text-sm font-bold text-slate-700 leading-snug">{task.title}</p>
+                      </div>
+                    ))}
+                    {data.tasks.filter(t => t.status === status).length === 0 && (
+                      <div className="h-20 border-2 border-dashed border-slate-100 rounded-2xl flex items-center justify-center">
+                        <p className="text-[10px] font-black text-slate-300 uppercase">No Tasks</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Backlinks & Competitors */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {r.backlinks.length > 0 && (
+            <div>
+              <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <Link2 size={16} className="text-blue-600" /> New Backlinks
+              </h2>
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="divide-y divide-slate-50">
+                  {r.backlinks.slice(0, 5).map((bl, i) => (
+                    <div key={i} className="px-5 py-3 hover:bg-slate-50 transition-colors">
+                      <p className="text-sm font-bold text-slate-700 truncate">{bl.source_url}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">DA {bl.da || "?"}</span>
+                        <span className="text-[10px] text-slate-400 truncate flex-1 italic">{bl.anchor_text || "No anchor text"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {r.competitors.length > 0 && (
+            <div>
+              <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <Target size={16} className="text-red-500" /> Competitors
+              </h2>
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="divide-y divide-slate-50">
+                  {r.competitors.slice(0, 5).map((comp, i) => (
+                    <div key={i} className="px-5 py-3 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-slate-700">{comp.name}</p>
+                        <p className="text-[10px] text-slate-400">{comp.website.replace(/^https?:\/\/(www\.)?/, "")}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-black text-slate-700">DA {comp.da || "?"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Notes & Recommendations */}
         {(m?.notes || m?.recommendations) && (
           <div className="grid md:grid-cols-2 gap-4">
@@ -275,9 +514,17 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
         )}
 
         {/* Footer */}
-        <div className="text-center py-6 border-t border-slate-200">
+        <div className="text-center py-10 border-t border-slate-200">
+          {r.agency?.logo_url ? (
+            <img src={r.agency.logo_url} alt={r.agency.agency_name} className="h-6 w-auto mx-auto mb-4 grayscale opacity-50" />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-black mx-auto mb-4">
+              {r.agency?.agency_name?.slice(0, 2).toUpperCase() || "SR"}
+            </div>
+          )}
+          <p className="text-sm font-bold text-slate-500 mb-1">{r.agency?.agency_name || "SEO Report Pad"}</p>
           <p className="text-xs text-slate-400">
-            Generated by SEO Report Manager · {r.month} {r.year} · {client.name}
+            Professional SEO Reporting Dashboard · {r.month} {r.year}
           </p>
         </div>
       </div>
