@@ -55,9 +55,9 @@ function calcTotal(inv: Invoice) {
 
 const emptyItem = (): InvoiceItem => ({ description: "", qty: 1, rate: 0 });
 
-const emptyForm = (invoices: Invoice[]): Omit<Invoice, "id" | "created_at"> => ({
+const emptyForm = (invoices: Invoice[], today = ""): Omit<Invoice, "id" | "created_at"> => ({
   invoice_no: nextInvoiceNo(invoices),
-  client: "", issue_date: new Date().toISOString().slice(0, 10),
+  client: "", issue_date: today,
   due_date: "", status: "draft",
   items: [emptyItem()], tax_pct: 0, discount: 0, notes: "",
 });
@@ -74,8 +74,9 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     const data = load();
+    const today = new Date().toISOString().slice(0, 10);
     setInvoices(data);
-    setForm(emptyForm(data));
+    setForm(emptyForm(data, today));
   }, []);
 
   const save = (d: Invoice[]) => { setInvoices(d); persist(d); };
@@ -152,7 +153,7 @@ export default function InvoicesPage() {
             className="flex items-center gap-2 border border-slate-200 bg-white text-slate-600 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50 shadow-sm">
             <Download size={15} /> Export
           </button>
-          <button onClick={() => { setShowForm(true); setForm(emptyForm(invoices)); }}
+          <button onClick={() => { setShowForm(true); setForm(emptyForm(invoices, new Date().toISOString().slice(0, 10))); }}
             className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
             <Plus size={16} /> New Invoice
           </button>
@@ -305,7 +306,7 @@ export default function InvoicesPage() {
           <DollarSign size={40} className="text-slate-200 mx-auto mb-4" />
           <h3 className="text-slate-600 font-bold text-lg mb-2">No invoices yet</h3>
           <p className="text-slate-400 text-sm mb-6">Create your first invoice and start tracking payments</p>
-          <button onClick={() => { setShowForm(true); setForm(emptyForm(invoices)); }}
+          <button onClick={() => { setShowForm(true); setForm(emptyForm(invoices, new Date().toISOString().slice(0, 10))); }}
             className="inline-flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700">
             <Plus size={15} /> New Invoice
           </button>

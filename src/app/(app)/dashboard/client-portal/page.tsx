@@ -30,9 +30,12 @@ export default function ClientPortalPage() {
   const [addingKw, setAddingKw] = useState(false);
   const [kwForm, setKwForm] = useState({ keyword: "", position: "", change: "" });
   const [addingReport, setAddingReport] = useState(false);
-  const [reportForm, setReportForm] = useState({ title: "", date: new Date().toISOString().slice(0, 10), summary: "", highlights: "" });
+  const [reportForm, setReportForm] = useState({ title: "", date: "", summary: "", highlights: "" });
 
-  useEffect(() => { setClients(load()); }, []);
+  useEffect(() => {
+    setClients(load());
+    setReportForm(f => ({ ...f, date: new Date().toISOString().slice(0, 10) }));
+  }, []);
   const save = (d: PortalClient[]) => { setClients(d); persist(d); };
 
   const addClient = (e: React.FormEvent) => {
@@ -66,7 +69,7 @@ export default function ClientPortalPage() {
     if (!reportForm.title.trim()) return;
     const report: PortalReport = { ...reportForm, highlights: reportForm.highlights.split("\n").map(s => s.trim()).filter(Boolean) };
     save(clients.map(c => c.id !== clientId ? c : { ...c, reports: [report, ...c.reports] }));
-    setReportForm({ title: "", date: new Date().toISOString().slice(0, 10), summary: "", highlights: "" });
+    setReportForm({ title: "", date: new Date().toISOString().slice(0, 10), summary: "", highlights: "" }); // safe — only called from event handler, never during SSR
     setAddingReport(false);
   };
   const removeReport = (clientId: string, idx: number) =>

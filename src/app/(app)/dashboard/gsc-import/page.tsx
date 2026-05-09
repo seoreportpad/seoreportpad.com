@@ -67,14 +67,17 @@ export default function GSCImportPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [importType, setImportType] = useState<"gsc" | "ga">("gsc");
   const [importName, setImportName] = useState("");
-  const [importDate, setImportDate] = useState(new Date().toISOString().slice(0, 10));
+  const [importDate, setImportDate] = useState("");
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setImports(load()); }, []);
+  useEffect(() => {
+    setImports(load());
+    setImportDate(new Date().toISOString().slice(0, 10));
+  }, []);
   const save = (d: ImportSet[]) => { setImports(d); persist(d); };
 
   const processFile = (file: File) => {

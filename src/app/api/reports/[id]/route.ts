@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import { getUserClient } from "@/lib/auth";
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
     const { id } = await params;
-    const sb = getUserClient(req);
+    const sb = createServiceClient();
     const { data, error } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), content_strategy(*), screenshots(*)").eq("id", id).single();
     if (error) return NextResponse.json({ error: error.message }, { status: 404 });
 
-    // Also fetch related client-level data for this report's month
     const clientId = data.client_id;
     const month = data.month;
     const year = data.year;
@@ -20,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       sb.from("competitors").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
       sb.from("work_logs").select("*").eq("client_id", clientId).eq("month", month).eq("year", year).order("log_date", { ascending: false }),
       sb.from("rank_history").select("*").eq("client_id", clientId).order("year", { ascending: true }).order("month", { ascending: true }),
-      sb.from("agencies").select("*").single(),
+      sb.from("agency_settings").select("*").single(),
     ]);
 
     return NextResponse.json({
@@ -34,11 +33,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+  try {
+    const { id } = await params;
+    const sb = createServiceClient();
+    const body = await req.json();
+    const { data, error } = await sb.from("reports").update(body).eq("id", id).select("id, status").single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
     const { id } = await params;
-    const sb = getUserClient(req);
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
+    const sb = createServiceClient();
     const body = await req.json();
     const { keywords, work_done, metrics, on_page_seo, local_seo, schema_seo, technical_seo, content_strategy, ...reportData } = body;
 
@@ -55,7 +68,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (keywords?.length) {
       await sb.from("keywords").insert(keywords.map((k: object) => ({ ...k, report_id: id })));
 
-      // Auto-save to rank_history for trend tracking (free — just DB writes)
       const { data: reportMeta } = await sb.from("reports").select("client_id, month, year").eq("id", id).single();
       if (reportMeta) {
         const rankRows = (keywords as { keyword: string; curr_ranking?: number; url?: string }[])
@@ -67,14 +79,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             month: reportMeta.month,
             year: reportMeta.year,
             url: k.url ?? null,
+            user_id: auth.user!.id,
           }));
         if (rankRows.length > 0) {
-          // Delete existing entries for this client/month/year then re-insert
-          await sb.from("rank_history")
-            .delete()
-            .eq("client_id", reportMeta.client_id)
-            .eq("month", reportMeta.month)
-            .eq("year", reportMeta.year);
+          await sb.from("rank_history").delete().eq("client_id", reportMeta.client_id).eq("month", reportMeta.month).eq("year", reportMeta.year);
           await sb.from("rank_history").insert(rankRows);
         }
       }
@@ -92,23 +100,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
-  try {
-    const { id } = await params;
-    const sb = getUserClient(req);
-    const body = await req.json();
-    const { data, error } = await sb.from("reports").update(body).eq("id", id).select("id, status").single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
-  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
-}
-
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
     const { id } = await params;
-    const sb = getUserClient(req);
+    const sb = createServiceClient();
+    // Delete all related data first
+    await Promise.all([
+      sb.from("keywords").delete().eq("report_id", id),
+      sb.from("work_done").delete().eq("report_id", id),
+      sb.from("metrics").delete().eq("report_id", id),
+      sb.from("on_page_seo").delete().eq("report_id", id),
+      sb.from("local_seo").delete().eq("report_id", id),
+      sb.from("schema_seo").delete().eq("report_id", id),
+      sb.from("technical_seo").delete().eq("report_id", id),
+      sb.from("content_strategy").delete().eq("report_id", id),
+      sb.from("screenshots").delete().eq("report_id", id),
+      sb.from("portal_links").delete().eq("report_id", id),
+    ]);
     const { error } = await sb.from("reports").delete().eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });

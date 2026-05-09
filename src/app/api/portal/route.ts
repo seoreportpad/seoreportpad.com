@@ -1,95 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
-import { getUserClient } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth";
 import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
+    const sb = createServiceClient();
     const { report_id } = await req.json();
     if (!report_id) return NextResponse.json({ error: "report_id required" }, { status: 400 });
-
-    const { data: report } = await sb.from("reports").select("id").eq("id", report_id).eq("user_id", user.id).single();
+    const { data: report } = await sb.from("reports").select("id").eq("id", report_id).single();
     if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
-
     const token = crypto.randomBytes(24).toString("hex");
-    const service = createServiceClient();
-    const { data, error } = await service
-      .from("portal_links")
-      .upsert({ report_id, token }, { onConflict: "report_id" })
-      .select()
-      .single();
+    const { data, error } = await sb.from("portal_links").upsert({ report_id, token }, { onConflict: "report_id" }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
-  } catch (e: unknown) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "not configured" }, { status: 503 });
-  const service = createServiceClient();
+  const sb = createServiceClient();
   try {
     const token = req.nextUrl.searchParams.get("token");
     if (!token) return NextResponse.json({ error: "token required" }, { status: 400 });
-
-    const { data: link, error: linkError } = await service
+    const { data: link, error: linkError } = await sb
       .from("portal_links")
       .select("*, reports(*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), technical_seo(*), schema_seo(*), content_strategy(*))")
       .eq("token", token)
       .single();
-    
     if (linkError || !link) return NextResponse.json({ error: "Invalid or expired link" }, { status: 404 });
-
     const report = link.reports;
     const clientId = report.client_id;
     const userId = report.user_id;
-
     const [backlinks, competitors, rankHistory, agency, otherReports, tasks, screenshots] = await Promise.all([
-      service.from("backlinks").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
-      service.from("competitors").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
-      service.from("rank_history").select("*").eq("client_id", clientId).order("year", { ascending: true }).order("month", { ascending: true }),
-      service.from("agency_settings").select("*").eq("user_id", userId).single(),
-      service.from("reports")
-        .select("id, month, year, portal_links(token), metrics(organic_traffic, backlinks, domain_authority)")
-        .eq("client_id", clientId)
-        .eq("status", "sent") // Only show sent reports to client
-        .order("year", { ascending: false })
-        .order("month", { ascending: false }),
-      service.from("client_tasks")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false }),
-      service.from("screenshots")
-        .select("*")
-        .eq("report_id", link.report_id)
-        .order("created_at", { ascending: true })
+      sb.from("backlinks").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+      sb.from("competitors").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+      sb.from("rank_history").select("*").eq("client_id", clientId).order("year", { ascending: true }).order("month", { ascending: true }),
+      sb.from("agency_settings").select("*").eq("user_id", userId).single(),
+      sb.from("reports").select("id, month, year, portal_links(token), metrics(organic_traffic, backlinks, domain_authority)").eq("client_id", clientId).eq("status", "sent").order("year", { ascending: false }).order("month", { ascending: false }),
+      sb.from("client_tasks").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+      sb.from("screenshots").select("*").eq("report_id", link.report_id).order("created_at", { ascending: true }),
     ]);
-
     return NextResponse.json({
       ...link,
-      reports: {
-        ...report,
-        backlinks: backlinks.data ?? [],
-        competitors: competitors.data ?? [],
-        rank_history: rankHistory.data ?? [],
-        agency: agency.data ?? null,
-        screenshots: screenshots.data ?? [],
-      },
-      history: (otherReports.data ?? []).map(r => ({
-        id: r.id,
-        month: r.month,
-        year: r.year,
-        token: (r.portal_links as any)?.[0]?.token,
-        metrics: Array.isArray(r.metrics) ? r.metrics[0] : r.metrics
-      })).filter(r => r.token),
-      tasks: tasks.data ?? []
+      reports: { ...report, backlinks: backlinks.data ?? [], competitors: competitors.data ?? [], rank_history: rankHistory.data ?? [], agency: agency.data ?? null, screenshots: screenshots.data ?? [] },
+      history: (otherReports.data ?? []).map(r => ({ id: r.id, month: r.month, year: r.year, token: (r.portal_links as { token: string }[])?.[0]?.token, metrics: Array.isArray(r.metrics) ? r.metrics[0] : r.metrics })).filter(r => r.token),
+      tasks: tasks.data ?? [],
     });
-  } catch (e: unknown) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

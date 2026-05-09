@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import { getUserClient } from "@/lib/auth";
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
+    const sb = createServiceClient();
+    const user = auth.user;
 
     const { reportId, month, year } = await req.json();
     if (!reportId) return NextResponse.json({ error: "reportId required" }, { status: 400 });

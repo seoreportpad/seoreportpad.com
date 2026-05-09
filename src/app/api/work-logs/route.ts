@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import { getUserClient } from "@/lib/auth";
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json([]);
   try {
-    const sb = getUserClient(req);
+    const sb = createServiceClient();
     const { searchParams } = req.nextUrl;
     const clientId = searchParams.get("clientId");
     const month = searchParams.get("month");
@@ -23,11 +23,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
+    const sb = createServiceClient();
     const body = await req.json();
-    const { data, error } = await sb.from("work_logs").insert({ ...body, user_id: user.id }).select().single();
+    const { data, error } = await sb.from("work_logs").insert({ ...body, user_id: auth.user.id }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }

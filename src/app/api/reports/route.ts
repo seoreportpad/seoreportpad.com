@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import { getUserClient } from "@/lib/auth";
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json([]);
   try {
-    const sb = getUserClient(req);
+    const sb = createServiceClient();
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get("clientId");
-    let query = sb.from("reports").select("*, clients(id, name, website, email), metrics(*)").order("created_at", { ascending: false });
+    let query = sb.from("reports").select("*, clients(id, name, website, email), metrics(*), keywords(*), work_done(*)").order("created_at", { ascending: false });
     if (clientId) query = query.eq("client_id", clientId);
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -19,13 +19,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
+    const sb = createServiceClient();
     const body = await req.json();
     const { keywords, work_done, metrics, on_page_seo, local_seo, schema_seo, technical_seo, content_strategy, ...reportData } = body;
 
-    const { data: report, error: rErr } = await sb.from("reports").insert({ ...reportData, user_id: user.id }).select().single();
+    const { data: report, error: rErr } = await sb.from("reports").insert({ ...reportData, user_id: auth.user.id }).select().single();
     if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
 
     if (keywords?.length) await sb.from("keywords").insert(keywords.map((k: object) => ({ ...k, report_id: report.id })));
