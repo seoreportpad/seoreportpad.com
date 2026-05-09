@@ -89,21 +89,32 @@ export async function POST(req: NextRequest) {
 </div>
 </body></html>`;
 
+  if (!process.env.RESEND_API_KEY) {
+    return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 500 });
+  }
+
+  // Ensure subject always has a value
+  if (!subject) {
+    subject = `SEO Report — ${month || ""} ${year || ""}`.trim();
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    const sendParams: any = {
+    const sendParams: Parameters<typeof resend.emails.send>[0] = {
       from: `${agencyName} <reports@seoreportpad.com>`,
       to,
       subject,
       html: branded,
+      ...(agencyFrom && agencyFrom !== "reports@seoreportpad.com" ? { reply_to: agencyFrom } : {}),
     };
-    if (agencyFrom && agencyFrom !== "reports@seoreportpad.com") {
-      sendParams.replyTo = agencyFrom;
-    }
 
-    const { error } = await resend.emails.send(sendParams);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data: sent, error } = await resend.emails.send(sendParams);
+    if (error) {
+      console.error("Resend error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    console.log("Email sent:", sent?.id);
 
     if (reportId && isSupabaseConfigured()) {
       try {
@@ -114,6 +125,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to send email";
+    console.error("send-email catch:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
