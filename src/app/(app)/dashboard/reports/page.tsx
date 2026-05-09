@@ -55,9 +55,11 @@ function ReportsList() {
   const [sending, setSending] = useState(false);
   const [sentId, setSentId] = useState<string | null>(null);
   const [cloneModal, setCloneModal] = useState<Report | null>(null);
-  const [cloneMonth, setCloneMonth] = useState(MONTHS[new Date().getMonth()]);
-  const [cloneYear, setCloneYear] = useState(new Date().getFullYear());
+  const [cloneMonth, setCloneMonth] = useState(MONTHS[0]);
+  const [cloneYear, setCloneYear] = useState(0);
   const [dupWarning, setDupWarning] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState("");
+  const [currentYear, setCurrentYear] = useState(0);
 
   const load = () => {
     setLoading(true);
@@ -66,6 +68,14 @@ function ReportsList() {
       .then(d => setReports(Array.isArray(d) ? d : []))
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    const now = new Date();
+    setCurrentMonth(MONTHS[now.getMonth()]);
+    setCurrentYear(now.getFullYear());
+    setCloneMonth(MONTHS[now.getMonth()]);
+    setCloneYear(now.getFullYear());
+  }, []);
 
   useEffect(() => { load(); }, [clientId]);
 
@@ -88,9 +98,6 @@ function ReportsList() {
 
   // Clone
   const openClone = (r: Report) => {
-    const now = new Date();
-    setCloneMonth(MONTHS[now.getMonth()]);
-    setCloneYear(now.getFullYear());
     setDupWarning(null);
     setCloneModal(r);
   };
@@ -189,9 +196,8 @@ function ReportsList() {
     return [...map.entries()];
   }, [reports]);
 
-  const currentMonth = MONTHS[new Date().getMonth()];
-  const currentYear = new Date().getFullYear();
   const clientsWithoutThisMonth = useMemo(() => {
+    if (!currentMonth || !currentYear) return [];
     const ids = new Set(reports.filter(r => r.month === currentMonth && r.year === currentYear).map(r => r.clients?.id));
     return clientList.filter(([id]) => !ids.has(id));
   }, [reports, clientList, currentMonth, currentYear]);
@@ -238,6 +244,26 @@ function ReportsList() {
           <Plus size={16} /> New Report
         </Link>
       </div>
+
+      {/* Summary stats */}
+      {reports.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {[
+            { label: "Total Reports", value: reports.length, icon: <FileText size={16} className="text-blue-500" />, bg: "bg-blue-50" },
+            { label: "Sent This Month", value: reports.filter(r => r.status === "sent" && r.month === currentMonth && r.year === currentYear).length, icon: <Send size={16} className="text-green-500" />, bg: "bg-green-50" },
+            { label: "Keywords Tracked", value: reports.reduce((acc, r) => acc + (r.keywords?.length ?? 0), 0), icon: <BarChart3 size={16} className="text-violet-500" />, bg: "bg-violet-50" },
+            { label: "Tasks Completed", value: reports.reduce((acc, r) => acc + (r.work_done?.length ?? 0), 0), icon: <Check size={16} className="text-emerald-500" />, bg: "bg-emerald-50" },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-2xl px-4 py-3 flex items-center gap-3`}>
+              <div className="shrink-0">{s.icon}</div>
+              <div>
+                <p className="text-xl font-black text-slate-800">{s.value}</p>
+                <p className="text-xs text-slate-500 font-medium">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Missing-this-month warning */}
       {clientsWithoutThisMonth.length > 0 && !clientId && (
