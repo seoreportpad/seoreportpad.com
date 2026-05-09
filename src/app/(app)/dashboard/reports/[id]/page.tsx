@@ -86,6 +86,18 @@ interface TechnicalSEO {
   gsc_coverage_errors?: string; gsc_manual_actions?: boolean; gsc_messages?: string;
   technical_score?: string; issues_found?: string; issues_fixed?: string; notes?: string;
 }
+interface BlogItem {
+  title: string;
+  target_keyword: string;
+  status: "Planned" | "Writing" | "Published";
+  url?: string;
+}
+interface ContentStrategy {
+  blogs: BlogItem[];
+  focus_topics?: string;
+  content_score?: string;
+  notes?: string;
+}
 interface Backlink {
   id: string; source_url: string; target_url: string; anchor_text?: string;
   da?: number; type?: string; status?: string; added_date?: string; notes?: string;
@@ -109,6 +121,7 @@ interface Report {
   local_seo?: LocalSEO;
   schema_seo?: SchemaSEO;
   technical_seo?: TechnicalSEO;
+  content_strategy?: ContentStrategy;
   backlinks?: Backlink[];
   competitors?: Competitor[];
   work_logs?: WorkLog[];
@@ -1615,6 +1628,83 @@ export default function ReportViewPage() {
                     <p className="text-sm text-orange-800 leading-relaxed whitespace-pre-wrap">{ts.notes}</p>
                   </div>
                 )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Content Strategy Section */}
+        {template === "full" && report.content_strategy && (() => {
+          const cs = report.content_strategy!;
+          const scoreNum = cs.content_score ? parseInt(cs.content_score) : null;
+          const scoreColor = scoreNum != null
+            ? scoreNum >= 80 ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+            : scoreNum >= 60 ? "text-blue-600 bg-blue-50 border-blue-200"
+            : "text-amber-600 bg-amber-50 border-amber-200" : "";
+          
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="font-bold text-slate-800 text-lg">Content Strategy & Blog Performance</h2>
+                  <p className="text-xs text-slate-500">Tracking content growth and topical authority</p>
+                </div>
+                {scoreNum != null && (
+                  <div className={`flex items-center gap-2 border rounded-2xl px-4 py-2 ${scoreColor}`}>
+                    <span className="text-2xl font-black">{scoreNum}</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Health</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-6">
+                {cs.blogs && cs.blogs.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Layers size={14} className="text-blue-500" /> Published & Planned Content
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {cs.blogs.map((blog, i) => (
+                        <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 hover:bg-white hover:shadow-md transition-all duration-300">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <h3 className="font-bold text-slate-800 text-sm leading-tight flex-1">{blog.title}</h3>
+                            <span className={`text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-full whitespace-nowrap ${
+                              blog.status === "Published" ? "bg-emerald-100 text-emerald-700" :
+                              blog.status === "Writing" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+                            }`}>
+                              {blog.status}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                              <Target size={12} className="text-slate-400" /> {blog.target_keyword}
+                            </p>
+                            {blog.url && (
+                              <a href={blog.url} target="_blank" rel="noreferrer" className="text-[11px] text-blue-600 hover:underline flex items-center gap-1">
+                                <Link2 size={12} /> View Post
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {cs.focus_topics && (
+                    <div className="bg-indigo-50/30 border border-indigo-100/50 rounded-2xl p-5">
+                      <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Topic Clusters & Focus</p>
+                      <p className="text-sm text-indigo-900/80 leading-relaxed whitespace-pre-wrap">{cs.focus_topics}</p>
+                    </div>
+                  )}
+                  {cs.notes && (
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Strategy Notes</p>
+                      <p className="text-sm text-slate-700 leading-relaxed italic">{cs.notes}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );

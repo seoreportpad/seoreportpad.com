@@ -4,8 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Globe, Mail, Phone, Building2, Pencil,
-  FileText, StickyNote, Plus, TrendingUp, TrendingDown,
-  ExternalLink, Calendar, BarChart3, ChevronRight, Trash2,
+  ExternalLink, Calendar, BarChart3, ChevronRight, Trash2, CheckCircle2, Type, Copy,
+  FileText, TrendingUp, TrendingDown, Plus, StickyNote
 } from "lucide-react";
 
 interface Client {
@@ -16,8 +16,12 @@ interface Report {
   id: string; month: string; year: number; status: string;
   metrics?: { organic_traffic?: number; prev_traffic?: number };
 }
+
 interface Note {
   id: string; title: string; content: string; created_at: string;
+}
+interface Brief {
+  id: string; title: string; primary_keyword: string; status: string; created_at: string; token: string;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
@@ -36,6 +40,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,10 +49,12 @@ export default function ClientDetailPage() {
       safe(`/api/clients/${id}`),
       safe(`/api/reports?clientId=${id}`),
       safe(`/api/notes?clientId=${id}`),
-    ]).then(([c, r, n]) => {
+      safe(`/api/briefs?clientId=${id}`),
+    ]).then(([c, r, n, b]) => {
       if (c && !c.error) setClient(c);
       setReports(Array.isArray(r) ? r : []);
       setNotes(Array.isArray(n) ? n : []);
+      setBriefs(Array.isArray(b) ? b : []);
       setLoading(false);
     });
   }, [id]);
@@ -62,6 +69,18 @@ export default function ClientDetailPage() {
     if (!confirm("Delete this note?")) return;
     await fetch(`/api/notes/${nid}`, { method: "DELETE" });
     setNotes(prev => prev.filter(n => n.id !== nid));
+  };
+
+  const delBrief = async (bid: string) => {
+    if (!confirm("Delete this content brief?")) return;
+    await fetch(`/api/briefs/${bid}`, { method: "DELETE" });
+    setBriefs(prev => prev.filter(b => b.id !== bid));
+  };
+
+  const copyBriefLink = (token: string) => {
+    const url = `${window.location.origin}/brief/${token}`;
+    navigator.clipboard.writeText(url);
+    alert("Public link copied! Send this to your writer.");
   };
 
   if (loading) return (
@@ -112,6 +131,10 @@ export default function ClientDetailPage() {
               <Link href={`/dashboard/clients/${id}/edit`}
                 className="flex items-center gap-2 border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
                 <Pencil size={14} /> Edit Client
+              </Link>
+              <Link href={`/dashboard/clients/${id}/audit`}
+                className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm">
+                <CheckCircle2 size={14} className="text-emerald-400" /> SEO Audit
               </Link>
             </div>
             <div className="flex flex-wrap gap-4 mt-4">
@@ -258,6 +281,55 @@ export default function ClientDetailPage() {
             </div>
           )}
         </div>
+        
+        {/* Content Briefs */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden lg:col-span-2">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+            <div className="flex items-center gap-2">
+              <Type size={16} className="text-pink-600" />
+              <h2 className="font-bold text-slate-700">Content Briefs ({briefs.length})</h2>
+            </div>
+            <Link href={`/dashboard/briefs/new?clientId=${id}`}
+              className="flex items-center gap-1.5 text-xs font-semibold text-pink-600 bg-pink-50 hover:bg-pink-100 px-3 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> New Brief
+            </Link>
+          </div>
+
+          {briefs.length === 0 ? (
+            <div className="py-12 text-center">
+              <Type size={32} className="mx-auto text-slate-200 mb-3" />
+              <p className="text-slate-400 text-sm font-medium">No content briefs yet</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4 p-5">
+              {briefs.map(b => (
+                <div key={b.id} className="bg-slate-50 rounded-2xl p-4 border border-slate-100 hover:border-slate-200 transition-colors group">
+                  <div className="flex items-start justify-between mb-3">
+                    <Link href={`/dashboard/briefs/${b.id}`} className="block flex-1 pr-4">
+                      <p className="font-bold text-slate-700 text-sm hover:text-blue-600 transition-colors">{b.title}</p>
+                      <p className="text-xs text-slate-500 mt-1">{b.primary_keyword}</p>
+                    </Link>
+                    <button onClick={() => delBrief(b.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md
+                      ${b.status === "completed" ? "bg-emerald-100 text-emerald-700" : 
+                        b.status === "in-progress" ? "bg-amber-100 text-amber-700" : 
+                        b.status === "ready" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"}`}>
+                      {b.status}
+                    </span>
+                    <button onClick={() => copyBriefLink(b.token)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 bg-white border border-slate-200 px-2 py-1 rounded-lg transition-colors">
+                      <Copy size={12} /> Copy Link
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Action bar */}
@@ -269,6 +341,10 @@ export default function ClientDetailPage() {
         <Link href={`/dashboard/notes?clientId=${id}`}
           className="flex items-center gap-2 bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
           <StickyNote size={15} /> Add Note
+        </Link>
+        <Link href={`/dashboard/clients/${id}/audit`}
+          className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
+          <CheckCircle2 size={15} /> SEO Audit
         </Link>
         <a href={client.website} target="_blank" rel="noreferrer"
           className="flex items-center gap-2 border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">

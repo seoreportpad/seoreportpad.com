@@ -1,60 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { getUserClient } from "@/lib/auth";
+
+export async function GET(req: NextRequest) {
+  if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+  try {
+    const sb = getUserClient(req);
+    const { searchParams } = new URL(req.url);
+    const clientId = searchParams.get("clientId");
+    if (!clientId) return NextResponse.json({ error: "clientId required" }, { status: 400 });
+
+    const { data, error } = await sb.from("audit_results").select("*").eq("client_id", clientId).single();
+    if (error && error.code !== "PGRST116") return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data || { checks: {} });
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
+}
 
 export async function POST(req: NextRequest) {
+  if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
-    const { url, email, name } = await req.json();
+    const sb = getUserClient(req);
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (!url) return NextResponse.json({ error: "URL is required" }, { status: 400 });
+    const { clientId, checks } = await req.json();
+    if (!clientId) return NextResponse.json({ error: "clientId required" }, { status: 400 });
 
-    // 1. Call Google PageSpeed Insights API (FREE)
-    const psiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&category=performance&category=seo&category=accessibility&category=best-practices`;
-    
-    const res = await fetch(psiUrl);
-    const data = await res.json();
+    const { data, error } = await sb.from("audit_results").upsert({
+      user_id: user.id,
+      client_id: clientId,
+      checks,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "client_id" }).select().single();
 
-    if (data.error) {
-      return NextResponse.json({ error: data.error.message }, { status: 400 });
-    }
-
-    const lighthouse = data.lighthouseResult;
-    const categories = lighthouse.categories;
-
-    const auditResults = {
-      performance: Math.round(categories.performance.score * 100),
-      seo: Math.round(categories.seo.score * 100),
-      accessibility: Math.round(categories.accessibility.score * 100),
-      best_practices: Math.round(categories["best-practices"].score * 100),
-      vitals: {
-        lcp: lighthouse.audits["largest-contentful-paint"].displayValue,
-        cls: lighthouse.audits["cumulative-layout-shift"].displayValue,
-        tbt: lighthouse.audits["total-blocking-time"].displayValue,
-        speed_index: lighthouse.audits["speed-index"].displayValue,
-      },
-      url: url,
-      fetched_at: new Date().toISOString(),
-    };
-
-    // 2. Save lead to Supabase if email provided
-    if (email) {
-      try {
-        const sb = createServiceClient();
-        await sb.from("leads").insert({
-          email,
-          name: name || "Anonymous",
-          website: url,
-          audit_data: auditResults,
-          source: "public_audit_tool"
-        });
-      } catch (dbError) {
-        console.error("Error saving lead:", dbError);
-        // We don't block the response if DB fails, as the audit is the main goal
-      }
-    }
-
-    return NextResponse.json(auditResults);
-  } catch (error) {
-    console.error("Audit API Error:", error);
-    return NextResponse.json({ error: "Failed to audit site. Please check the URL." }, { status: 500 });
-  }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

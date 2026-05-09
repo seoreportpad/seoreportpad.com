@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const sb = getUserClient(req);
-    const { data, error } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), screenshots(*)").eq("id", id).single();
+    const { data, error } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), content_strategy(*), screenshots(*)").eq("id", id).single();
     if (error) return NextResponse.json({ error: error.message }, { status: 404 });
 
     // Also fetch related client-level data for this report's month
@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const sb = getUserClient(req);
     const body = await req.json();
-    const { keywords, work_done, metrics, on_page_seo, local_seo, schema_seo, technical_seo, ...reportData } = body;
+    const { keywords, work_done, metrics, on_page_seo, local_seo, schema_seo, technical_seo, content_strategy, ...reportData } = body;
 
     await sb.from("reports").update(reportData).eq("id", id);
     await sb.from("keywords").delete().eq("report_id", id);
@@ -50,6 +50,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await sb.from("local_seo").delete().eq("report_id", id);
     await sb.from("schema_seo").delete().eq("report_id", id);
     await sb.from("technical_seo").delete().eq("report_id", id);
+    await sb.from("content_strategy").delete().eq("report_id", id);
 
     if (keywords?.length) {
       await sb.from("keywords").insert(keywords.map((k: object) => ({ ...k, report_id: id })));
@@ -84,8 +85,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (local_seo) await sb.from("local_seo").insert({ ...local_seo, report_id: id });
     if (schema_seo) await sb.from("schema_seo").insert({ ...schema_seo, report_id: id });
     if (technical_seo) await sb.from("technical_seo").insert({ ...technical_seo, report_id: id });
+    if (content_strategy) await sb.from("content_strategy").insert({ ...content_strategy, report_id: id });
 
-    const { data } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*)").eq("id", id).single();
+    const { data } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), content_strategy(*)").eq("id", id).single();
     return NextResponse.json(data);
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

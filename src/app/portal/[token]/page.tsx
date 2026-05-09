@@ -5,10 +5,10 @@ import { use } from "react";
 import {
   Globe, TrendingUp, TrendingDown, CheckCircle2, FileText,
   BarChart3, Link2, Calendar, ExternalLink, ChevronUp, ChevronDown,
-  Activity, Target, Layers, Shield,
+  Activity, Target, Layers, Shield, Download, ImagePlus,
 } from "lucide-react";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell,
 } from "recharts";
@@ -32,12 +32,22 @@ interface PortalData {
     local_seo?: { local_seo_score?: number };
     technical_seo?: { technical_score?: number };
     schema_seo?: { schema_score?: string };
+    content_strategy?: {
+      blogs: { title: string; target_keyword: string; status: string; url?: string }[];
+      focus_topics?: string;
+      content_score?: number;
+      notes?: string;
+    };
     backlinks: { source_url: string; target_url: string; anchor_text?: string; da?: number; status?: string }[];
     competitors: { name: string; website: string; da?: number; keywords?: string }[];
     rank_history: { keyword: string; position: number; month: string; year: number }[];
     agency: { agency_name: string; logo_url?: string; primary_color?: string } | null;
+    screenshots?: { id: string; url: string; label: string }[];
   };
-  history: { id: string; month: string; year: number; token: string }[];
+  history: { 
+    id: string; month: string; year: number; token: string;
+    metrics?: { organic_traffic?: number; backlinks?: number; domain_authority?: number };
+  }[];
   tasks: { id: string; title: string; status: string; category: string }[];
 }
 
@@ -144,13 +154,17 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+            <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 print:hidden">
               <Calendar size={13} />
               <span>{r.month} {r.year}</span>
             </div>
             
+            <button onClick={() => window.print()} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition-all print:hidden shadow-sm">
+              <Download size={14} /> PDF
+            </button>
+
             {data.history.length > 1 && (
-              <div className="relative group">
+              <div className="relative group print:hidden">
                 <button className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all">
                   Report History <ChevronDown size={14} />
                 </button>
@@ -272,6 +286,51 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
           </div>
         )}
 
+        {/* Historical Growth Trends */}
+        {data.history.length > 0 && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <h2 className="font-bold text-slate-700 mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <Activity size={16} className="text-violet-600" /> Historical Growth Trends
+            </h2>
+            {(() => {
+              // Combine current report with historical reports and sort chronologically
+              const allReports = [
+                { month: `${r.month} ${r.year}`, timestamp: new Date(`${r.month} 1, ${r.year}`).getTime(), traffic: m?.organic_traffic || 0, backlinks: m?.backlinks || 0, da: m?.domain_authority || 0 },
+                ...data.history.map(h => ({
+                  month: `${h.month} ${h.year}`,
+                  timestamp: new Date(`${h.month} 1, ${h.year}`).getTime(),
+                  traffic: h.metrics?.organic_traffic || 0,
+                  backlinks: h.metrics?.backlinks || 0,
+                  da: h.metrics?.domain_authority || 0
+                }))
+              ].sort((a, b) => a.timestamp - b.timestamp);
+
+              return (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={allReports} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }} />
+                      <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "20px" }} />
+                      <Area yAxisId="left" type="monotone" dataKey="traffic" name="Organic Traffic" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorTraffic)" activeDot={{ r: 6 }} />
+                      <Line yAxisId="right" type="monotone" dataKey="backlinks" name="Backlinks" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* Rank History Trends */}
         {r.rank_history.length > 0 && (
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
@@ -371,6 +430,56 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Content Strategy */}
+        {r.content_strategy && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <h2 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <Layers size={16} className="text-blue-600" /> Content Strategy & Blogs
+            </h2>
+            <div className="space-y-6">
+              {r.content_strategy.blogs && r.content_strategy.blogs.length > 0 && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {r.content_strategy.blogs.map((blog, i) => (
+                    <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h3 className="font-bold text-slate-700 text-sm leading-tight">{blog.title}</h3>
+                        <span className={`text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full ${
+                          blog.status === "Published" ? "bg-green-100 text-green-700" :
+                          blog.status === "Writing" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+                        }`}>
+                          {blog.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1"><Target size={10} /> {blog.target_keyword}</span>
+                        {blog.url && (
+                          <a href={blog.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 font-bold hover:underline flex items-center gap-1">
+                            <ExternalLink size={10} /> Live
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="grid md:grid-cols-2 gap-4">
+                {r.content_strategy.focus_topics && (
+                  <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Focus Topics</p>
+                    <p className="text-xs text-blue-800/80 leading-relaxed">{r.content_strategy.focus_topics}</p>
+                  </div>
+                )}
+                {r.content_strategy.notes && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Strategy Notes</p>
+                    <p className="text-xs text-slate-600 italic leading-relaxed">{r.content_strategy.notes}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -490,6 +599,28 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
             </div>
           )}
         </div>
+
+        {/* Image Evidence Gallery */}
+        {r.screenshots && r.screenshots.length > 0 && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm print-avoid-break">
+            <h2 className="font-bold text-slate-700 mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <ImagePlus size={16} className="text-violet-600" /> Work Evidence & Screenshots
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {r.screenshots.map((s) => (
+                <div key={s.id} className="group relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm aspect-video">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.url} alt={s.label} className="w-full h-full object-cover" />
+                  {s.label && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
+                      <p className="text-white text-xs font-bold truncate">{s.label}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Notes & Recommendations */}
         {(m?.notes || m?.recommendations) && (

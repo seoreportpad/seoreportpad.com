@@ -6,6 +6,27 @@ import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2, ListPlu
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const WORK_CATEGORIES = ["On-Page SEO","Technical SEO","Link Building","Content","Local SEO","Reporting","Other"];
 
+const REPORT_TEMPLATES = [
+  {
+    id: "month_1",
+    name: "Month 1 - Technical & Baseline",
+    notes: "This month focused heavily on technical SEO foundation, setting up Google Search Console, and creating a baseline for rankings.",
+    recommendations: "Next month, we will shift focus to On-Page optimization for the main service pages and start local citation building."
+  },
+  {
+    id: "local_seo",
+    name: "Local SEO Boost",
+    notes: "Focus was on Google Business Profile optimization, cleaning up NAP consistency, and acquiring high-quality local citations.",
+    recommendations: "Next month, we will launch new location-specific landing pages and push for more Google Reviews."
+  },
+  {
+    id: "content_links",
+    name: "Content & Outreach",
+    notes: "Published 3 new blog posts targeting informational keywords. Reached out to 50+ prospects for link building, securing 2 high-DA guest posts.",
+    recommendations: "Continue content production. Plan to update older blog posts for better freshness scores."
+  }
+];
+
 interface Keyword { keyword: string; prev_ranking: string; curr_ranking: string; search_volume: string; url: string; }
 interface WorkItem { category: string; task: string; }
 interface Metrics {
@@ -98,6 +119,21 @@ interface TechnicalSEO {
   gsc_coverage_errors: string; gsc_manual_actions: string; gsc_enhancement_errors: string;
   technical_score: string; issues_found: string; issues_fixed: string; notes: string;
 }
+
+interface BlogItem {
+  title: string;
+  target_keyword: string;
+  status: "Planned" | "Writing" | "Published";
+  url?: string;
+}
+
+interface ContentStrategy {
+  blogs: BlogItem[];
+  focus_topics: string;
+  content_score: string;
+  notes: string;
+}
+
 interface Client { id: string; name: string; website?: string; }
 
 interface Props {
@@ -110,6 +146,7 @@ interface Props {
     local_seo?: Partial<LocalSEO>;
     schema_seo?: Partial<SchemaSEO>;
     technical_seo?: Partial<TechnicalSEO>;
+    content_strategy?: Partial<ContentStrategy>;
   };
 }
 
@@ -168,6 +205,14 @@ const defaultTechnicalSEO: TechnicalSEO = {
   gsc_coverage_errors: "", gsc_manual_actions: "", gsc_enhancement_errors: "",
   technical_score: "", issues_found: "", issues_fixed: "", notes: "",
 };
+
+const defaultContentStrategy: ContentStrategy = {
+  blogs: [{ title: "", target_keyword: "", status: "Planned", url: "" }],
+  focus_topics: "",
+  content_score: "",
+  notes: "",
+};
+
 const defaultOnPage: OnPageSEO = {
   title_tag: "", title_length: "", title_has_keyword: false, title_issues: "",
   meta_description: "", meta_length: "", meta_has_keyword: false, meta_issues: "",
@@ -260,8 +305,13 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
       ])
     ),
   });
+  const [contentStrategy, setContentStrategy] = useState<ContentStrategy>({
+    ...defaultContentStrategy,
+    ...initial?.content_strategy,
+    blogs: initial?.content_strategy?.blogs ?? defaultContentStrategy.blogs,
+  });
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "keywords" | "work">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work">("info");
   const [showImport, setShowImport] = useState(false);
   const [importLogs, setImportLogs] = useState<{ id: string; log_date: string; category: string; task: string }[]>([]);
   const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
@@ -584,6 +634,12 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
         issues_fixed: num(technicalSEO.issues_fixed),
         notes: technicalSEO.notes || null,
       },
+      content_strategy: {
+        blogs: contentStrategy.blogs.filter(b => b.title),
+        focus_topics: contentStrategy.focus_topics || null,
+        content_score: num(contentStrategy.content_score),
+        notes: contentStrategy.notes || null,
+      },
     };
     const url = reportId ? `/api/reports/${reportId}` : "/api/reports";
     const method = reportId ? "PUT" : "POST";
@@ -599,6 +655,7 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
     { id: "localseo", label: "Local SEO" },
     { id: "schema", label: "Schema Markup" },
     { id: "technical", label: "Technical SEO" },
+    { id: "content", label: "Content & Blogs" },
     { id: "keywords", label: `Keywords (${keywords.length})` },
     { id: "work", label: `Work Done (${workDone.length})` },
   ] as const;
@@ -712,9 +769,22 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-medium text-slate-600">Summary / Notes</label>
-              {reportId && (
-                <AISummaryButton reportId={reportId} onGenerated={summary => setMetrics(m => ({ ...m, notes: summary }))} />
-              )}
+              <div className="flex items-center gap-2">
+                <select 
+                  onChange={(e) => {
+                    const t = REPORT_TEMPLATES.find(x => x.id === e.target.value);
+                    if (t) setMetrics(m => ({...m, notes: t.notes, recommendations: t.recommendations}));
+                    e.target.value = "";
+                  }}
+                  className="text-[10px] md:text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 focus:outline-none bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="">Load Template...</option>
+                  {REPORT_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                {reportId && (
+                  <AISummaryButton reportId={reportId} onGenerated={summary => setMetrics(m => ({ ...m, notes: summary }))} />
+                )}
+              </div>
             </div>
             <textarea value={metrics.notes} onChange={e => setMetrics({ ...metrics, notes: e.target.value })} rows={3}
               placeholder="Monthly summary for the client..."
@@ -1285,6 +1355,76 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
             <textarea value={technicalSEO.notes} onChange={e => tp("notes", e.target.value)} rows={4}
               placeholder="Technical issues found, fixes applied, recommendations..."
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Content & Blogs ── */}
+      {activeTab === "content" && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-slate-700">Content Strategy & Blogs</h2>
+              <button type="button" onClick={() => setContentStrategy(s => ({ ...s, blogs: [...s.blogs, { title: "", target_keyword: "", status: "Planned", url: "" }] }))} 
+                className="flex items-center gap-1.5 text-sm text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 font-medium transition-colors">
+                <Plus size={14} /> Add Blog Title
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {contentStrategy.blogs.map((blog, i) => (
+                <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 relative group">
+                  <button type="button" onClick={() => setContentStrategy(s => ({ ...s, blogs: s.blogs.filter((_, idx) => idx !== i) }))}
+                    className="absolute -top-2 -right-2 bg-white border border-slate-200 p-1 rounded-full text-slate-300 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+                    <Trash2 size={12} />
+                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {inp("Blog Title", blog.title, v => setContentStrategy(s => ({ ...s, blogs: s.blogs.map((b, idx) => idx === i ? { ...b, title: v } : b) })), "text", "e.g. 10 Best SEO Strategies for 2026")}
+                    {inp("Target Keyword", blog.target_keyword, v => setContentStrategy(s => ({ ...s, blogs: s.blogs.map((b, idx) => idx === i ? { ...b, target_keyword: v } : b) })), "text", "e.g. seo strategies 2026")}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                      <select value={blog.status} onChange={e => setContentStrategy(s => ({ ...s, blogs: s.blogs.map((b, idx) => idx === i ? { ...b, status: e.target.value as any } : b) }))}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="Planned">Planned</option>
+                        <option value="Writing">Writing</option>
+                        <option value="Published">Published</option>
+                      </select>
+                    </div>
+                    {blog.status === "Published" && inp("Live URL", blog.url || "", v => setContentStrategy(s => ({ ...s, blogs: s.blogs.map((b, idx) => idx === i ? { ...b, url: v } : b) })), "text", "https://...")}
+                  </div>
+                </div>
+              ))}
+              {contentStrategy.blogs.length === 0 && (
+                <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl">
+                  <p className="text-sm text-slate-400">No blog titles added yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h3 className="font-semibold text-slate-700 mb-3">Topic Clusters & Focus Areas</h3>
+            <textarea value={contentStrategy.focus_topics} onChange={e => setContentStrategy(s => ({ ...s, focus_topics: e.target.value }))} rows={3}
+              placeholder="e.g. Focus on 'Local SEO in Lahore' and 'Technical SEO for E-commerce'..."
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Content Health Score</label>
+              <input type="number" min="0" max="100" value={contentStrategy.content_score}
+                onChange={e => setContentStrategy(s => ({ ...s, content_score: e.target.value }))} placeholder="0-100"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+              <h3 className="font-semibold text-slate-700 mb-2">Internal Linking Update</h3>
+              <p className="text-xs text-slate-500 mb-2">Mention if any new internal linking maps were created.</p>
+              <input value={contentStrategy.notes} onChange={e => setContentStrategy(s => ({ ...s, notes: e.target.value }))}
+                placeholder="e.g. Added 5 internal links to new service pages"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+            </div>
           </div>
         </div>
       )}

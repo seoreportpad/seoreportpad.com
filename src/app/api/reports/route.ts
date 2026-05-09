@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
-    const { keywords, work_done, metrics, on_page_seo, local_seo, schema_seo, technical_seo, ...reportData } = body;
+    const { keywords, work_done, metrics, on_page_seo, local_seo, schema_seo, technical_seo, content_strategy, ...reportData } = body;
 
     const { data: report, error: rErr } = await sb.from("reports").insert({ ...reportData, user_id: user.id }).select().single();
     if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
@@ -35,8 +35,9 @@ export async function POST(req: NextRequest) {
     if (local_seo) await sb.from("local_seo").insert({ ...local_seo, report_id: report.id });
     if (schema_seo) await sb.from("schema_seo").insert({ ...schema_seo, report_id: report.id });
     if (technical_seo) await sb.from("technical_seo").insert({ ...technical_seo, report_id: report.id });
+    if (content_strategy) await sb.from("content_strategy").insert({ ...content_strategy, report_id: report.id });
 
-    const { data: full } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*)").eq("id", report.id).single();
+    const { data: full } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), content_strategy(*)").eq("id", report.id).single();
     return NextResponse.json(full);
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

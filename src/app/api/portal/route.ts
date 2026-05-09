@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     const { data: link, error: linkError } = await service
       .from("portal_links")
-      .select("*, reports(*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), technical_seo(*), schema_seo(*))")
+      .select("*, reports(*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), technical_seo(*), schema_seo(*), content_strategy(*))")
       .eq("token", token)
       .single();
     
@@ -49,13 +49,13 @@ export async function GET(req: NextRequest) {
     const clientId = report.client_id;
     const userId = report.user_id;
 
-    const [backlinks, competitors, rankHistory, agency, otherReports, tasks] = await Promise.all([
+    const [backlinks, competitors, rankHistory, agency, otherReports, tasks, screenshots] = await Promise.all([
       service.from("backlinks").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
       service.from("competitors").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
       service.from("rank_history").select("*").eq("client_id", clientId).order("year", { ascending: true }).order("month", { ascending: true }),
       service.from("agency_settings").select("*").eq("user_id", userId).single(),
       service.from("reports")
-        .select("id, month, year, portal_links(token)")
+        .select("id, month, year, portal_links(token), metrics(organic_traffic, backlinks, domain_authority)")
         .eq("client_id", clientId)
         .eq("status", "sent") // Only show sent reports to client
         .order("year", { ascending: false })
@@ -63,7 +63,11 @@ export async function GET(req: NextRequest) {
       service.from("client_tasks")
         .select("*")
         .eq("client_id", clientId)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false }),
+      service.from("screenshots")
+        .select("*")
+        .eq("report_id", link.report_id)
+        .order("created_at", { ascending: true })
     ]);
 
     return NextResponse.json({
@@ -74,12 +78,14 @@ export async function GET(req: NextRequest) {
         competitors: competitors.data ?? [],
         rank_history: rankHistory.data ?? [],
         agency: agency.data ?? null,
+        screenshots: screenshots.data ?? [],
       },
       history: (otherReports.data ?? []).map(r => ({
         id: r.id,
         month: r.month,
         year: r.year,
-        token: (r.portal_links as any)?.[0]?.token
+        token: (r.portal_links as any)?.[0]?.token,
+        metrics: Array.isArray(r.metrics) ? r.metrics[0] : r.metrics
       })).filter(r => r.token),
       tasks: tasks.data ?? []
     });
