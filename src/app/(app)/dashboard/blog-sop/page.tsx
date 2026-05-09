@@ -131,7 +131,7 @@ export default function BlogSopPage() {
               </span>
             </div>
             <p className="text-sm text-gray-500">
-              {overall.total} checkpoints • 7 phases — blog likhne ka complete end-to-end SOP
+              {overall.total} checkpoints • 7 phases — complete end-to-end blog writing SOP
             </p>
           </div>
 
@@ -379,7 +379,7 @@ export default function BlogSopPage() {
 
           {phasePercent === 100 && (
             <div className="mt-4 bg-green-50 border border-green-200 rounded-xl px-5 py-4 text-center text-green-700 font-semibold text-sm">
-              ✅ {activePhase.title} — Complete! Agla step karo.
+              ✅ {activePhase.title} — Complete! Move on to the next step.
             </div>
           )}
 
@@ -387,7 +387,7 @@ export default function BlogSopPage() {
             <div className="mt-4 bg-purple-50 border-2 border-purple-300 rounded-xl px-5 py-5 text-center">
               <div className="text-3xl mb-2">🎉</div>
               <p className="text-purple-800 font-bold text-lg">Blog SOP 100% Complete!</p>
-              <p className="text-purple-600 text-sm mt-1">Poora blog ready hai submit karne ke liye. Zabardast kaam!</p>
+              <p className="text-purple-600 text-sm mt-1">Blog is fully ready to submit. Outstanding work!</p>
             </div>
           )}
         </main>

@@ -63,11 +63,15 @@ export default function ContentCalendarPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterClient, setFilterClient] = useState("all");
 
-  const now = new Date();
-  const [calYear, setCalYear] = useState(now.getFullYear());
-  const [calMonth, setCalMonth] = useState(now.getMonth());
+  const [calYear, setCalYear] = useState(0);
+  const [calMonth, setCalMonth] = useState(0);
 
-  useEffect(() => { setPosts(load()); }, []);
+  useEffect(() => {
+    setPosts(load());
+    const now = new Date();
+    setCalYear(now.getFullYear());
+    setCalMonth(now.getMonth());
+  }, []);
 
   const save = (d: ContentPost[]) => { setPosts(d); persist(d); };
 
@@ -263,7 +267,8 @@ export default function ContentCalendarPage() {
             ))}
             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
               const dayPosts = postsForDay(day);
-              const isToday = calYear === now.getFullYear() && calMonth === now.getMonth() && day === now.getDate();
+              const today = new Date();
+              const isToday = calYear === today.getFullYear() && calMonth === today.getMonth() && day === today.getDate();
               return (
                 <div key={day} className={`min-h-[90px] border-r border-b border-slate-50 p-1.5 ${isToday ? "bg-teal-50/40" : "hover:bg-slate-50/50"} transition-colors`}>
                   <div className={`text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "bg-teal-600 text-white" : "text-slate-500"}`}>
