@@ -177,6 +177,7 @@ export default function ReportViewPage() {
     description: "Monthly SEO Services",
     items: [{ desc: "Technical SEO Audit & Fixes", qty: 1, price: 200 }, { desc: "Content Optimization & Link Building", qty: 1, price: 300 }]
   });
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/reports/${id}`)
@@ -379,8 +380,6 @@ export default function ReportViewPage() {
 
     XLSX.writeFile(wb, `SEO-Report-${client.name}-${report.month}-${report.year}.xlsx`);
   };
-
-  const [pdfLoading, setPdfLoading] = useState(false);
 
   const downloadPDF = async () => {
     setPdfLoading(true);
