@@ -92,6 +92,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+  try {
+    const { id } = await params;
+    const sb = getUserClient(req);
+    const body = await req.json();
+    const { data, error } = await sb.from("reports").update(body).eq("id", id).select("id, status").single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
