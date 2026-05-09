@@ -380,6 +380,119 @@ export default function ReportViewPage() {
     XLSX.writeFile(wb, `SEO-Report-${client.name}-${report.month}-${report.year}.xlsx`);
   };
 
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const downloadPDF = async () => {
+    setPdfLoading(true);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const element = document.getElementById("report-body");
+      if (!element) return;
+      await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: `SEO-Report-${client.name}-${report.month}-${report.year}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(element)
+        .save();
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const downloadWord = () => {
+    const m = report.metrics;
+    const kws = report.keywords ?? [];
+    const work = report.work_done ?? [];
+
+    const kwRows = kws.map(k => {
+      const diff = k.prev_ranking != null && k.curr_ranking != null ? k.prev_ranking - k.curr_ranking : null;
+      return `<tr>
+        <td style="padding:6px 10px;border:1px solid #e2e8f0;">${k.keyword}</td>
+        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">${k.prev_ranking ?? "—"}</td>
+        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">${k.curr_ranking ?? "—"}</td>
+        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;color:${diff != null && diff > 0 ? "green" : diff != null && diff < 0 ? "red" : "gray"};">${diff != null ? (diff > 0 ? `+${diff}` : String(diff)) : "—"}</td>
+        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">${k.search_volume?.toLocaleString() ?? "—"}</td>
+      </tr>`;
+    }).join("");
+
+    const workRows = work.map(w => `<tr>
+      <td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:600;color:#3b82f6;">${w.category}</td>
+      <td style="padding:6px 10px;border:1px solid #e2e8f0;">${w.task}</td>
+    </tr>`).join("");
+
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8"><title>SEO Report</title>
+      <style>
+        body { font-family: Calibri, sans-serif; font-size: 11pt; color: #1e293b; margin: 2cm; }
+        h1 { font-size: 28pt; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+        h2 { font-size: 14pt; font-weight: 700; color: #3b82f6; margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
+        h3 { font-size: 11pt; font-weight: 700; color: #475569; margin: 0 0 4px; }
+        table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 10pt; }
+        th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.05em; padding: 8px 10px; border: 1px solid #e2e8f0; text-align: left; }
+        .cover { text-align: center; padding: 40px 0 32px; border-bottom: 3px solid #3b82f6; margin-bottom: 32px; }
+        .badge { display: inline-block; background: #dbeafe; color: #1d4ed8; font-weight: 700; padding: 4px 12px; border-radius: 999px; font-size: 9pt; }
+        .metric-grid { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+        .metric-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
+        .metric-val { font-size: 22pt; font-weight: 900; color: #0f172a; }
+        .metric-lbl { font-size: 8pt; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .metric-diff-up { color: #16a34a; font-size: 9pt; font-weight: 700; }
+        .metric-diff-dn { color: #dc2626; font-size: 9pt; font-weight: 700; }
+        .note-box { background: #f8fafc; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 12px 0; font-size: 10pt; line-height: 1.6; }
+      </style></head>
+      <body>
+        <div class="cover">
+          <p style="color:#3b82f6;font-weight:900;letter-spacing:3px;font-size:9pt;text-transform:uppercase;">${agency?.agency_name || "SEO REPORT PAD"}</p>
+          <h1>SEO Performance Report</h1>
+          <p style="font-size:18pt;color:#3b82f6;font-weight:700;">${report.month} ${report.year}</p>
+          <p style="margin-top:16px;font-size:13pt;font-weight:700;">Prepared for: <strong>${client.name}</strong></p>
+          <p style="color:#64748b;">${client.website}</p>
+          <span class="badge">${report.status?.toUpperCase()}</span>
+        </div>
+
+        <h2>Performance Metrics</h2>
+        <table>
+          <tr><th>Metric</th><th>This Month</th><th>Last Month</th><th>Change</th></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Organic Traffic</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.organic_traffic?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.prev_traffic?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;${m?.organic_traffic && m?.prev_traffic ? (m.organic_traffic >= m.prev_traffic ? "color:green;" : "color:red;") : ""}">${m?.organic_traffic && m?.prev_traffic ? (m.organic_traffic >= m.prev_traffic ? "+" : "") + (m.organic_traffic - m.prev_traffic).toLocaleString() : "—"}</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Backlinks</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.backlinks?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.prev_backlinks?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;${m?.backlinks && m?.prev_backlinks ? (m.backlinks >= m.prev_backlinks ? "color:green;" : "color:red;") : ""}">${m?.backlinks && m?.prev_backlinks ? (m.backlinks >= m.prev_backlinks ? "+" : "") + (m.backlinks - m.prev_backlinks) : "—"}</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Domain Authority</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.domain_authority ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.prev_da ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;${m?.domain_authority && m?.prev_da ? (m.domain_authority >= m.prev_da ? "color:green;" : "color:red;") : ""}">${m?.domain_authority && m?.prev_da ? (m.domain_authority >= m.prev_da ? "+" : "") + (m.domain_authority - m.prev_da) : "—"}</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">GSC Impressions</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.impressions?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">GSC Clicks</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.clicks?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Avg. Position</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.avg_position ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Pages Indexed</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.pages_indexed ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
+        </table>
+
+        ${kws.length ? `
+        <h2>Keyword Rankings</h2>
+        <table>
+          <tr><th>Keyword</th><th>Prev Rank</th><th>Curr Rank</th><th>Change</th><th>Volume</th></tr>
+          ${kwRows}
+        </table>` : ""}
+
+        ${work.length ? `
+        <h2>Work Done This Month</h2>
+        <table>
+          <tr><th>Category</th><th>Task</th></tr>
+          ${workRows}
+        </table>` : ""}
+
+        ${m?.notes ? `<h2>Notes</h2><div class="note-box">${m.notes}</div>` : ""}
+        ${m?.recommendations ? `<h2>Recommendations</h2><div class="note-box">${m.recommendations}</div>` : ""}
+
+        <p style="margin-top:40px;color:#94a3b8;font-size:8pt;text-align:center;">Generated by ${agency?.agency_name || "SEO Report Pad"} · ${report.month} ${report.year}</p>
+      </body></html>`;
+
+    const blob = new Blob([html], { type: "application/msword" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `SEO-Report-${client.name}-${report.month}-${report.year}.doc`;
+    a.click();
+  };
+
   const sendEmail = async () => {
     setSending(true);
     const portalSection = portalLink
@@ -583,8 +696,11 @@ export default function ReportViewPage() {
           <button onClick={downloadExcel} className="flex items-center gap-2 border border-slate-200 bg-white text-emerald-700 px-3.5 py-2 rounded-xl text-sm hover:bg-emerald-50 transition-colors">
             <FileSpreadsheet size={15} /> Excel
           </button>
-          <button onClick={() => window.print()} className="flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl text-sm hover:bg-slate-50 transition-colors">
-            <Download size={15} /> PDF
+          <button onClick={downloadWord} className="flex items-center gap-2 border border-slate-200 bg-white text-blue-700 px-3.5 py-2 rounded-xl text-sm hover:bg-blue-50 transition-colors">
+            <FileSpreadsheet size={15} /> Word
+          </button>
+          <button onClick={downloadPDF} disabled={pdfLoading} className="flex items-center gap-2 border border-slate-200 bg-white text-red-600 px-3.5 py-2 rounded-xl text-sm hover:bg-red-50 transition-colors disabled:opacity-60">
+            {pdfLoading ? <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /> : <Download size={15} />} PDF
           </button>
           <button onClick={() => { document.body.classList.add("invoice-mode"); setInvoiceModal(true); }} className="flex items-center gap-2 border border-slate-200 bg-white text-indigo-700 px-3.5 py-2 rounded-xl text-sm hover:bg-indigo-50 transition-colors shadow-sm">
             <ReceiptText size={15} /> Invoice
@@ -629,7 +745,7 @@ export default function ReportViewPage() {
       )}
 
       {/* Report body */}
-      <div className="report-body max-w-4xl mx-auto space-y-5 pb-20">
+      <div id="report-body" className="report-body max-w-4xl mx-auto space-y-5 pb-20">
 
         {/* Hero header */}
         <div className="print-avoid-break rounded-2xl overflow-hidden">
