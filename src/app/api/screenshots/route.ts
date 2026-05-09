@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json([]);
   try {
     const reportId = req.nextUrl.searchParams.get("reportId");
     if (!reportId) return NextResponse.json({ error: "reportId required" }, { status: 400 });
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("screenshots")
       .select("*")
       .eq("report_id", reportId)
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { report_id, label, url } = body;
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("screenshots")
       .insert({ report_id, label, url })
       .select()

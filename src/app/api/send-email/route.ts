@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { getUserClient } from "@/lib/auth";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
 
 function replaceVars(text: string, vars: Record<string, string>) {
   return text.replace(/\{(\w+)\}/g, (_, key) => vars[key] || `{${key}}`);
@@ -24,14 +24,14 @@ export async function POST(req: NextRequest) {
 
   if (isSupabaseConfigured()) {
     try {
-      const sb = getUserClient(req);
-      const { data: { user } } = await sb.auth.getUser();
-      if (user) {
+      const auth = await getAuthenticatedUser(req);
+      const sb = createServiceClient();
+      if (auth.user) {
         const { data: agency } = await sb.from("agency_settings")
           .select("agency_name, primary_color, from_email, email_subject, email_body")
-          .eq("user_id", user.id)
+          .eq("user_id", auth.user.id)
           .maybeSingle();
-        
+
         if (agency) {
           if (agency.agency_name) agencyName = agency.agency_name;
           if (agency.primary_color) agencyColor = agency.primary_color;
@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
           templateBody = agency.email_body || "";
         }
 
-        // If reportId is provided, try to fetch report details for variables
         if (reportId && (!month || !year || !clientName)) {
           const { data: report } = await sb.from("reports")
             .select("month, year, clients(name)")
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
           if (report) {
             month = month || report.month;
             year = year || report.year;
-            clientName = clientName || (report.clients as any)?.name;
+            clientName = clientName || (report.clients as unknown as Record<string, unknown>)?.name;
           }
         }
       }
@@ -108,8 +107,7 @@ export async function POST(req: NextRequest) {
 
     if (reportId && isSupabaseConfigured()) {
       try {
-        const sb = getUserClient(req);
-        await sb.from("reports").update({ status: "sent" }).eq("id", reportId);
+        await createServiceClient().from("reports").update({ status: "sent" }).eq("id", reportId);
       } catch { /* non-critical */ }
     }
 

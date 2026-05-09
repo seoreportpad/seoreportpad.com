@@ -808,8 +808,8 @@ export default function ReportViewPage() {
                 { subject: "Schema", A: report.schema_seo?.schema_score ? Number(report.schema_seo.schema_score) : 0, fullMark: 100 },
               ];
               return (
-                <div className="flex-1 min-h-[260px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="flex-1 w-full">
+                  <ResponsiveContainer width="100%" height={260}>
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={scores}>
                       <PolarGrid stroke="#f1f5f9" />
                       <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "#64748b" }} />

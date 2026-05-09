@@ -176,10 +176,9 @@ function ReportsList() {
     }
   };
 
-  // PDF print
+  // Open report for PDF download
   const printReport = (id: string) => {
-    const w = window.open(`/dashboard/reports/${id}?print=1`, "_blank");
-    w?.addEventListener("load", () => setTimeout(() => w.print(), 600));
+    window.open(`/dashboard/reports/${id}`, "_blank");
   };
 
   // Sort
