@@ -11,8 +11,8 @@ interface Result { clientId: string; clientName: string; reportId?: string; stat
 export default function AutoReportsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [month, setMonth] = useState(MONTHS[new Date().getMonth()]);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(MONTHS[0]);
+  const [year, setYear] = useState(0);
   const [template, setTemplate] = useState<"blank" | "copy_last">("blank");
   const [autoSend, setAutoSend] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,6 +20,9 @@ export default function AutoReportsPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
+    const now = new Date();
+    setMonth(MONTHS[now.getMonth()]);
+    setYear(now.getFullYear());
     fetch("/api/clients").then(r => r.ok ? r.json() : []).then(d => {
       const list = Array.isArray(d) ? d : [];
       setClients(list);

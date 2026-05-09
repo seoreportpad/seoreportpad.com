@@ -20,11 +20,17 @@ interface ProfitStats {
 export default function ProfitabilityPage() {
   const [stats, setStats] = useState<ProfitStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterMonth, setFilterMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterYear, setFilterYear] = useState(0);
 
   useEffect(() => {
-    loadData();
+    const now = new Date();
+    setFilterMonth(now.toLocaleString('default', { month: 'long' }));
+    setFilterYear(now.getFullYear());
+  }, []);
+
+  useEffect(() => {
+    if (filterMonth && filterYear) loadData();
   }, [filterMonth, filterYear]);
 
   const loadData = async () => {

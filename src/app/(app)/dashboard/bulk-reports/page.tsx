@@ -11,13 +11,16 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 export default function BulkReportsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [month, setMonth] = useState(MONTHS[new Date().getMonth()]);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(MONTHS[0]);
+  const [year, setYear] = useState(0);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [created, setCreated] = useState<CreatedReport[]>([]);
 
   useEffect(() => {
+    const now = new Date();
+    setMonth(MONTHS[now.getMonth()]);
+    setYear(now.getFullYear());
     fetch("/api/clients").then(r => r.ok ? r.json() : []).then(d => {
       if (Array.isArray(d)) { setClients(d); setSelected(d.map((c: Client) => c.id)); }
       setLoading(false);
