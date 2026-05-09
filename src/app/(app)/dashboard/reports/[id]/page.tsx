@@ -385,105 +385,561 @@ export default function ReportViewPage() {
     setPdfLoading(true);
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      const element = document.getElementById("report-body");
-      if (!element) return;
+      const kws = report.keywords ?? [];
+      const work = report.work_done ?? [];
+      const backlinks = report.backlinks ?? [];
+      const competitors = report.competitors ?? [];
+
+      const mkDiff = (curr?: number | null, prev?: number | null, lower = false) => {
+        if (curr == null || prev == null) return "";
+        const d = curr - prev;
+        const good = lower ? d <= 0 : d >= 0;
+        return `<span style="color:${good ? "#16a34a" : "#dc2626"};font-weight:700;">${d > 0 ? "+" : ""}${d.toLocaleString()}</span>`;
+      };
+
+      const scoreBar = (score?: number | null) => {
+        if (score == null) return "—";
+        const s = Number(score);
+        const color = s >= 80 ? "#16a34a" : s >= 60 ? "#f59e0b" : "#dc2626";
+        return `<div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;background:#f1f5f9;border-radius:999px;height:8px;">
+            <div style="width:${s}%;background:${color};border-radius:999px;height:8px;"></div>
+          </div>
+          <span style="font-weight:700;color:${color};">${s}/100</span>
+        </div>`;
+      };
+
+      const bool = (v?: boolean | null) => v ? '<span style="color:#16a34a;">✔ Yes</span>' : '<span style="color:#dc2626;">✘ No</span>';
+
+      const kwRows = kws.map(k => {
+        const diff = k.prev_ranking != null && k.curr_ranking != null ? k.prev_ranking - k.curr_ranking : null;
+        const arrow = diff == null ? "" : diff > 0 ? "▲" : diff < 0 ? "▼" : "—";
+        const color = diff == null ? "" : diff > 0 ? "color:#16a34a;" : diff < 0 ? "color:#dc2626;" : "";
+        return `<tr>
+          <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;">${k.keyword}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;">${k.prev_ranking ?? "—"}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700;">${k.curr_ranking ?? "—"}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;${color}font-weight:700;">${arrow} ${diff != null ? Math.abs(diff) : "—"}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;">${k.search_volume?.toLocaleString() ?? "—"}</td>
+        </tr>`;
+      }).join("");
+
+      const workByCategory = work.reduce<Record<string, string[]>>((acc, w) => {
+        if (!acc[w.category]) acc[w.category] = [];
+        acc[w.category].push(w.task);
+        return acc;
+      }, {});
+
+      const workHTML = Object.entries(workByCategory).map(([cat, tasks]) =>
+        `<tr><td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#3b82f6;vertical-align:top;white-space:nowrap;">${cat}</td>
+         <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;">${tasks.map(t => `• ${t}`).join("<br>")}</td></tr>`
+      ).join("");
+
+      const blRows = backlinks.map(b => `<tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:9px;word-break:break-all;">${b.source_url}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:9px;">${b.anchor_text ?? "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;text-align:center;">${b.da ?? "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;text-align:center;color:${b.status === "live" ? "#16a34a" : "#f59e0b"};">${b.status ?? "live"}</td>
+      </tr>`).join("");
+
+      const compRows = competitors.map(c => `<tr>
+        <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;font-weight:600;">${c.name}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;color:#3b82f6;">${c.website}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;">${c.da ?? "—"}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;">${c.notes ?? "—"}</td>
+      </tr>`).join("");
+
+      const op = report.on_page_seo;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tech = report.technical_seo as any;
+      const schema = report.schema_seo;
+      const local = report.local_seo;
+      const content = report.content_strategy;
+
+      const el = document.createElement("div");
+      el.style.cssText = "width:780px;font-family:Inter,Arial,sans-serif;font-size:11px;color:#1e293b;background:white;padding:0;";
+      el.innerHTML = `
+        <!-- COVER -->
+        <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:white;padding:60px 50px;text-align:center;page-break-after:always;">
+          <div style="font-size:10px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:#60a5fa;margin-bottom:40px;">${agency.agency_name || "SEO REPORT PAD"}</div>
+          <div style="font-size:42px;font-weight:900;margin-bottom:8px;">SEO Performance Report</div>
+          <div style="font-size:22px;color:#60a5fa;font-weight:700;margin-bottom:50px;">${report.month} ${report.year}</div>
+          <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:30px 40px;display:inline-block;min-width:300px;">
+            <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:3px;margin-bottom:10px;">Prepared for</div>
+            <div style="font-size:28px;font-weight:900;margin-bottom:6px;">${client.name}</div>
+            <div style="color:#60a5fa;font-size:13px;">${client.website}</div>
+          </div>
+          <div style="margin-top:50px;font-size:9px;color:#475569;">Generated by ${agency.agency_name || "SEO Report Pad"} · ${new Date().toLocaleDateString()}</div>
+        </div>
+
+        <div style="padding:30px 40px;">
+
+        <!-- METRICS -->
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #3b82f6;padding-left:12px;margin-bottom:16px;">Performance Metrics</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+            ${[
+              ["Organic Traffic", m?.organic_traffic, m?.prev_traffic, false],
+              ["Backlinks", m?.backlinks, m?.prev_backlinks, false],
+              ["Domain Authority", m?.domain_authority, m?.prev_da, false],
+              ["GSC Impressions", m?.impressions, null, false],
+            ].map(([label, val, prev]) => `
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;">
+                <div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700;margin-bottom:6px;">${label}</div>
+                <div style="font-size:22px;font-weight:900;color:#0f172a;">${val != null ? Number(val).toLocaleString() : "—"}</div>
+                ${prev != null && val != null ? `<div style="font-size:9px;margin-top:4px;">${mkDiff(Number(val), Number(prev))} vs last month</div>` : ""}
+              </div>`).join("")}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+            ${[
+              ["GSC Clicks", m?.clicks, null],
+              ["Avg. Position", m?.avg_position, null],
+              ["Pages Indexed", m?.pages_indexed, null],
+              ["Technical Fixed", m?.technical_fixed, null],
+            ].map(([label, val]) => `
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;">
+                <div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700;margin-bottom:6px;">${label}</div>
+                <div style="font-size:22px;font-weight:900;color:#0f172a;">${val != null ? Number(val).toLocaleString() : "—"}</div>
+              </div>`).join("")}
+          </div>
+        </div>
+
+        <!-- SEO SCORES -->
+        ${(op || tech || schema || local) ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #8b5cf6;padding-left:12px;margin-bottom:16px;">SEO Health Scores</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:10px 12px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Section</th>
+              <th style="padding:10px 12px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;width:200px;">Score</th>
+              <th style="padding:10px 12px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Issues Found</th>
+              <th style="padding:10px 12px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Issues Fixed</th>
+            </tr>
+            ${op ? `<tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-weight:600;">On-Page SEO</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">${scoreBar(op.on_page_score)}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">${op.issues_found ?? "—"}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">${op.issues_fixed ?? "—"}</td></tr>` : ""}
+            ${tech ? `<tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-weight:600;">Technical SEO</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">${scoreBar(tech.technical_score != null ? Number(tech.technical_score) : null)}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">${tech.issues_found ?? "—"}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">${tech.issues_fixed ?? "—"}</td></tr>` : ""}
+            ${schema ? `<tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-weight:600;">Schema SEO</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">${scoreBar(schema.schema_score != null ? Number(schema.schema_score) : null)}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">${schema.issues_found ?? "—"}</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">${schema.issues_fixed ?? "—"}</td></tr>` : ""}
+            ${local ? `<tr><td style="padding:10px 12px;font-weight:600;">Local SEO</td><td style="padding:10px 12px;">${scoreBar(local.local_seo_score)}</td><td style="padding:10px 12px;text-align:center;">${local.issues_found ?? "—"}</td><td style="padding:10px 12px;text-align:center;">${local.issues_fixed ?? "—"}</td></tr>` : ""}
+          </table>
+        </div>` : ""}
+
+        <!-- KEYWORDS -->
+        ${kws.length ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #10b981;padding-left:12px;margin-bottom:16px;">Keyword Rankings</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:9px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Keyword</th>
+              <th style="padding:9px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Prev</th>
+              <th style="padding:9px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Current</th>
+              <th style="padding:9px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Change</th>
+              <th style="padding:9px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Volume</th>
+            </tr>
+            ${kwRows}
+          </table>
+        </div>` : ""}
+
+        <!-- WORK DONE -->
+        ${work.length ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #f59e0b;padding-left:12px;margin-bottom:16px;">Work Done This Month</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:9px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;width:160px;">Category</th>
+              <th style="padding:9px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Tasks</th>
+            </tr>
+            ${workHTML}
+          </table>
+        </div>` : ""}
+
+        <!-- ON-PAGE SEO -->
+        ${op ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #3b82f6;padding-left:12px;margin-bottom:16px;">On-Page SEO</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Title & Meta</div>
+              <div style="margin-bottom:4px;">Title: <strong>${op.title_tag ?? "—"}</strong></div>
+              <div style="margin-bottom:4px;">Length: ${op.title_length ?? "—"} chars · Keyword: ${bool(op.title_has_keyword)}</div>
+              <div style="margin-top:8px;">Meta Length: ${op.meta_length ?? "—"} chars · Keyword: ${bool(op.meta_has_keyword)}</div>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Content</div>
+              <div>Word Count: <strong>${op.word_count?.toLocaleString() ?? "—"}</strong></div>
+              <div>Thin Content Pages: <strong>${op.thin_content_pages ?? "—"}</strong></div>
+              <div>Duplicate Content: <strong>${op.duplicate_content_pages ?? "—"}</strong></div>
+              <div>Internal Links: <strong>${op.internal_links_count ?? "—"}</strong> · Broken: <strong>${op.broken_internal_links ?? "—"}</strong></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Page Speed</div>
+              <div>Mobile: <strong>${op.mobile_speed_score ?? "—"}/100</strong></div>
+              <div>Desktop: <strong>${op.desktop_speed_score ?? "—"}/100</strong></div>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Images</div>
+              <div>Total: <strong>${op.total_images ?? "—"}</strong></div>
+              <div>Missing Alt: <strong>${op.images_missing_alt ?? "—"}</strong></div>
+              <div>Large Files: <strong>${op.images_large_count ?? "—"}</strong></div>
+            </div>
+          </div>
+          ${op.notes ? `<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;border-radius:0 8px 8px 0;font-size:10px;line-height:1.6;">${op.notes}</div>` : ""}
+        </div>` : ""}
+
+        <!-- TECHNICAL SEO -->
+        ${tech ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #ec4899;padding-left:12px;margin-bottom:16px;">Technical SEO</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+            ${[
+              ["HTTPS", bool(tech.https_ok)],
+              ["SSL Valid", bool(tech.ssl_valid)],
+              ["Mobile Friendly", bool(tech.mobile_friendly)],
+              ["Robots.txt OK", bool(tech.robots_txt_ok)],
+              ["Sitemap Submitted", bool(tech.xml_sitemap_submitted)],
+              ["GSC Connected", bool(tech.google_search_console_connected)],
+              ["CDN Used", bool(tech.cdn_used)],
+              ["Caching Enabled", bool(tech.caching_enabled)],
+            ].map(([label, val]) => `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px;">${label}</div>
+              <div style="font-size:10px;">${val}</div>
+            </div>`).join("")}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+            ${[
+              ["Pages Crawled", tech.pages_crawled],
+              ["Pages Indexed", tech.pages_indexed],
+              ["Broken Links", tech.broken_links],
+              ["Crawl Errors", tech.crawl_errors],
+              ["Redirect Chains", tech.redirect_chains],
+              ["TTFB (ms)", tech.ttfb_ms],
+            ].map(([label, val]) => `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+              <div style="font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px;">${label}</div>
+              <div style="font-size:16px;font-weight:900;color:#0f172a;">${val ?? "—"}</div>
+            </div>`).join("")}
+          </div>
+          ${tech.notes ? `<div style="background:#fdf2f8;border-left:4px solid #ec4899;padding:12px 16px;border-radius:0 8px 8px 0;font-size:10px;line-height:1.6;">${tech.notes}</div>` : ""}
+        </div>` : ""}
+
+        <!-- SCHEMA SEO -->
+        ${schema ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #f59e0b;padding-left:12px;margin-bottom:16px;">Schema Markup</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+            ${[
+              ["Organization", schema.has_organization],
+              ["Website", schema.has_website],
+              ["Article", schema.has_article],
+              ["FAQ", schema.has_faq],
+              ["Breadcrumb", schema.has_breadcrumb],
+              ["Local Business", schema.has_local_business],
+              ["Product", schema.has_product],
+              ["Service", schema.has_service],
+            ].map(([label, val]) => `<div style="background:${val ? "#f0fdf4" : "#f8fafc"};border:1px solid ${val ? "#bbf7d0" : "#e2e8f0"};border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px;">${label}</div>
+              <div>${bool(val as boolean)}</div>
+            </div>`).join("")}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;"><div style="font-size:8px;color:#64748b;font-weight:700;margin-bottom:4px;">PAGES WITH SCHEMA</div><div style="font-size:18px;font-weight:900;">${schema.pages_with_schema ?? "—"}</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;"><div style="font-size:8px;color:#64748b;font-weight:700;margin-bottom:4px;">RICH RESULTS</div><div style="font-size:18px;font-weight:900;">${bool(schema.rich_results_eligible)}</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;"><div style="font-size:8px;color:#64748b;font-weight:700;margin-bottom:4px;">VALIDATION PASSED</div><div style="font-size:18px;font-weight:900;">${bool(schema.schema_validator_passed)}</div></div>
+          </div>
+          ${schema.notes ? `<div style="margin-top:12px;background:#fffbeb;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:0 8px 8px 0;font-size:10px;line-height:1.6;">${schema.notes}</div>` : ""}
+        </div>` : ""}
+
+        <!-- CONTENT STRATEGY -->
+        ${content ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #10b981;padding-left:12px;margin-bottom:16px;">Content Strategy</div>
+          ${content.focus_topics ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:12px;"><span style="font-weight:700;font-size:9px;text-transform:uppercase;color:#166534;">Focus Topics: </span>${content.focus_topics}</div>` : ""}
+          ${Array.isArray(content.blogs) && content.blogs.length ? `
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Blog Title</th>
+              <th style="padding:8px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Words</th>
+              <th style="padding:8px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Status</th>
+            </tr>
+            ${(content.blogs as unknown as Record<string, unknown>[]).map((b) => `<tr>
+              <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;">${b.title ?? "—"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;">${b.words ?? "—"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;text-align:center;"><span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:999px;font-size:8px;font-weight:700;">${b.status ?? "published"}</span></td>
+            </tr>`).join("")}
+          </table>` : ""}
+          ${content.notes ? `<div style="margin-top:12px;background:#f0fdf4;border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;font-size:10px;line-height:1.6;">${content.notes}</div>` : ""}
+        </div>` : ""}
+
+        <!-- BACKLINKS -->
+        ${backlinks.length ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #6366f1;padding-left:12px;margin-bottom:16px;">Backlinks (${backlinks.length})</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Source</th>
+              <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Anchor</th>
+              <th style="padding:8px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">DA</th>
+              <th style="padding:8px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Status</th>
+            </tr>
+            ${blRows}
+          </table>
+        </div>` : ""}
+
+        <!-- COMPETITORS -->
+        ${competitors.length ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #ef4444;padding-left:12px;margin-bottom:16px;">Competitor Analysis</div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Competitor</th>
+              <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Website</th>
+              <th style="padding:8px 10px;text-align:center;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">DA</th>
+              <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;">Notes</th>
+            </tr>
+            ${compRows}
+          </table>
+        </div>` : ""}
+
+        <!-- NOTES & RECOMMENDATIONS -->
+        ${m?.notes ? `
+        <div style="margin-bottom:20px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #3b82f6;padding-left:12px;margin-bottom:12px;">Notes</div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;font-size:11px;line-height:1.7;">${m.notes}</div>
+        </div>` : ""}
+        ${m?.recommendations ? `
+        <div style="margin-bottom:30px;page-break-inside:avoid;">
+          <div style="font-size:16px;font-weight:900;color:#0f172a;border-left:4px solid #10b981;padding-left:12px;margin-bottom:12px;">Recommendations</div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;font-size:11px;line-height:1.7;">${m.recommendations}</div>
+        </div>` : ""}
+
+        <div style="text-align:center;padding:20px 0;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:9px;">
+          © ${new Date().getFullYear()} ${agency.agency_name || "SEO Report Pad"} · ${report.month} ${report.year} · ${client.website}
+        </div>
+
+        </div>`;
+
+      document.body.appendChild(el);
       await html2pdf()
         .set({
-          margin: [10, 10, 10, 10],
+          margin: 0,
           filename: `SEO-Report-${client.name}-${report.month}-${report.year}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
+          html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 780 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         })
-        .from(element)
+        .from(el)
         .save();
+      document.body.removeChild(el);
     } finally {
       setPdfLoading(false);
     }
   };
 
   const downloadWord = () => {
-    const m = report.metrics;
     const kws = report.keywords ?? [];
     const work = report.work_done ?? [];
+    const backlinks = report.backlinks ?? [];
+    const competitors = report.competitors ?? [];
+      const op = report.on_page_seo;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tech = report.technical_seo as any;
+      const schema = report.schema_seo;
+      const local = report.local_seo;
+      const content = report.content_strategy;
+
+    const td = (v: unknown, extra = "") => `<td style="padding:7px 10px;border:1px solid #e2e8f0;${extra}">${v ?? "—"}</td>`;
+    const th = (v: string) => `<th style="padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;font-size:9pt;text-transform:uppercase;color:#64748b;font-weight:700;">${v}</th>`;
+    const h2 = (v: string, color = "#2563eb") => `<h2 style="font-size:14pt;font-weight:900;color:${color};border-left:4px solid ${color};padding-left:10px;margin:24px 0 10px;">${v}</h2>`;
+    const noteBox = (v: string, color = "#2563eb") => `<div style="background:#f8fafc;border-left:5px solid ${color};padding:12px 16px;margin:10px 0;font-size:10pt;line-height:1.7;">${v}</div>`;
+    const boolW = (v?: boolean | null) => v ? '<b style="color:green;">✔ Yes</b>' : '<b style="color:red;">✘ No</b>';
+    const chg = (curr?: number | null, prev?: number | null) => {
+      if (curr == null || prev == null) return "—";
+      const d = curr - prev;
+      return `<b style="color:${d >= 0 ? "green" : "red"}">${d >= 0 ? "+" : ""}${d}</b>`;
+    };
 
     const kwRows = kws.map(k => {
       const diff = k.prev_ranking != null && k.curr_ranking != null ? k.prev_ranking - k.curr_ranking : null;
-      return `<tr>
-        <td style="padding:6px 10px;border:1px solid #e2e8f0;">${k.keyword}</td>
-        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">${k.prev_ranking ?? "—"}</td>
-        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">${k.curr_ranking ?? "—"}</td>
-        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;color:${diff != null && diff > 0 ? "green" : diff != null && diff < 0 ? "red" : "gray"};">${diff != null ? (diff > 0 ? `+${diff}` : String(diff)) : "—"}</td>
-        <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">${k.search_volume?.toLocaleString() ?? "—"}</td>
-      </tr>`;
+      return `<tr>${td(k.keyword)}${td(k.prev_ranking ?? "—", "text-align:center;")}${td(k.curr_ranking ?? "—", "text-align:center;font-weight:700;")}${td(diff == null ? "—" : `<b style="color:${diff > 0 ? "green" : diff < 0 ? "red" : "gray"}">${diff > 0 ? "▲" : diff < 0 ? "▼" : "—"} ${Math.abs(diff)}</b>`, "text-align:center;")}${td(k.search_volume?.toLocaleString() ?? "—", "text-align:center;")}</tr>`;
     }).join("");
 
-    const workRows = work.map(w => `<tr>
-      <td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:600;color:#3b82f6;">${w.category}</td>
-      <td style="padding:6px 10px;border:1px solid #e2e8f0;">${w.task}</td>
-    </tr>`).join("");
+    const workByCategory = work.reduce<Record<string, string[]>>((acc, w) => { if (!acc[w.category]) acc[w.category] = []; acc[w.category].push(w.task); return acc; }, {});
+    const workRows = Object.entries(workByCategory).map(([cat, tasks]) =>
+      `<tr>${td(`<b style="color:#2563eb;">${cat}</b>`)}${td(tasks.map(t => `• ${t}`).join("<br>"))}</tr>`).join("");
 
-    const html = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8"><title>SEO Report</title>
-      <style>
-        body { font-family: Calibri, sans-serif; font-size: 11pt; color: #1e293b; margin: 2cm; }
-        h1 { font-size: 28pt; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
-        h2 { font-size: 14pt; font-weight: 700; color: #3b82f6; margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
-        h3 { font-size: 11pt; font-weight: 700; color: #475569; margin: 0 0 4px; }
-        table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 10pt; }
-        th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.05em; padding: 8px 10px; border: 1px solid #e2e8f0; text-align: left; }
-        .cover { text-align: center; padding: 40px 0 32px; border-bottom: 3px solid #3b82f6; margin-bottom: 32px; }
-        .badge { display: inline-block; background: #dbeafe; color: #1d4ed8; font-weight: 700; padding: 4px 12px; border-radius: 999px; font-size: 9pt; }
-        .metric-grid { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
-        .metric-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
-        .metric-val { font-size: 22pt; font-weight: 900; color: #0f172a; }
-        .metric-lbl { font-size: 8pt; color: #64748b; font-weight: 600; text-transform: uppercase; }
-        .metric-diff-up { color: #16a34a; font-size: 9pt; font-weight: 700; }
-        .metric-diff-dn { color: #dc2626; font-size: 9pt; font-weight: 700; }
-        .note-box { background: #f8fafc; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 12px 0; font-size: 10pt; line-height: 1.6; }
-      </style></head>
-      <body>
-        <div class="cover">
-          <p style="color:#3b82f6;font-weight:900;letter-spacing:3px;font-size:9pt;text-transform:uppercase;">${agency?.agency_name || "SEO REPORT PAD"}</p>
-          <h1>SEO Performance Report</h1>
-          <p style="font-size:18pt;color:#3b82f6;font-weight:700;">${report.month} ${report.year}</p>
-          <p style="margin-top:16px;font-size:13pt;font-weight:700;">Prepared for: <strong>${client.name}</strong></p>
-          <p style="color:#64748b;">${client.website}</p>
-          <span class="badge">${report.status?.toUpperCase()}</span>
-        </div>
+    const blRows = backlinks.map(b => `<tr>${td(`<span style="font-size:8pt;">${b.source_url}</span>`)}${td(b.anchor_text ?? "—")}${td(b.da ?? "—", "text-align:center;")}${td(`<b style="color:${b.status === "live" ? "green" : "orange"}">${b.status ?? "live"}</b>`, "text-align:center;")}</tr>`).join("");
+    const compRows = competitors.map(c => `<tr>${td(`<b>${c.name}</b>`)}${td(`<span style="color:#2563eb;">${c.website}</span>`)}${td(c.da ?? "—", "text-align:center;")}${td(c.notes ?? "—")}</tr>`).join("");
 
-        <h2>Performance Metrics</h2>
-        <table>
-          <tr><th>Metric</th><th>This Month</th><th>Last Month</th><th>Change</th></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Organic Traffic</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.organic_traffic?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.prev_traffic?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;${m?.organic_traffic && m?.prev_traffic ? (m.organic_traffic >= m.prev_traffic ? "color:green;" : "color:red;") : ""}">${m?.organic_traffic && m?.prev_traffic ? (m.organic_traffic >= m.prev_traffic ? "+" : "") + (m.organic_traffic - m.prev_traffic).toLocaleString() : "—"}</td></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Backlinks</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.backlinks?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.prev_backlinks?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;${m?.backlinks && m?.prev_backlinks ? (m.backlinks >= m.prev_backlinks ? "color:green;" : "color:red;") : ""}">${m?.backlinks && m?.prev_backlinks ? (m.backlinks >= m.prev_backlinks ? "+" : "") + (m.backlinks - m.prev_backlinks) : "—"}</td></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Domain Authority</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.domain_authority ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.prev_da ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;${m?.domain_authority && m?.prev_da ? (m.domain_authority >= m.prev_da ? "color:green;" : "color:red;") : ""}">${m?.domain_authority && m?.prev_da ? (m.domain_authority >= m.prev_da ? "+" : "") + (m.domain_authority - m.prev_da) : "—"}</td></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">GSC Impressions</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.impressions?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">GSC Clicks</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.clicks?.toLocaleString() ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Avg. Position</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.avg_position ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
-          <tr><td style="padding:6px 10px;border:1px solid #e2e8f0;">Pages Indexed</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">${m?.pages_indexed ?? "—"}</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td><td style="padding:6px 10px;border:1px solid #e2e8f0;">—</td></tr>
-        </table>
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>SEO Report</title>
+<style>
+  body { font-family: Calibri, sans-serif; font-size: 11pt; color: #1e293b; margin: 2cm 2.5cm; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  p { margin: 4px 0; }
+</style></head>
+<body>
 
-        ${kws.length ? `
-        <h2>Keyword Rankings</h2>
-        <table>
-          <tr><th>Keyword</th><th>Prev Rank</th><th>Curr Rank</th><th>Change</th><th>Volume</th></tr>
-          ${kwRows}
-        </table>` : ""}
+<div style="text-align:center;border-bottom:3px solid #2563eb;padding-bottom:28px;margin-bottom:28px;">
+  <p style="color:#2563eb;font-weight:900;font-size:9pt;letter-spacing:3px;text-transform:uppercase;">${agency.agency_name || "SEO REPORT PAD"}</p>
+  <h1 style="font-size:28pt;font-weight:900;color:#0f172a;margin:8px 0;">SEO Performance Report</h1>
+  <p style="font-size:18pt;color:#2563eb;font-weight:700;">${report.month} ${report.year}</p>
+  <p style="margin-top:14px;font-size:13pt;">Prepared for: <b>${client.name}</b></p>
+  <p style="color:#64748b;">${client.website}</p>
+  <span style="background:#dbeafe;color:#1d4ed8;padding:3px 14px;border-radius:999px;font-size:9pt;font-weight:700;">${(report.status ?? "draft").toUpperCase()}</span>
+</div>
 
-        ${work.length ? `
-        <h2>Work Done This Month</h2>
-        <table>
-          <tr><th>Category</th><th>Task</th></tr>
-          ${workRows}
-        </table>` : ""}
+${h2("Performance Metrics")}
+<table>
+  <tr>${th("Metric")}${th("This Month")}${th("Last Month")}${th("Change")}</tr>
+  <tr>${td("Organic Traffic")}${td(m?.organic_traffic?.toLocaleString() ?? "—")}${td(m?.prev_traffic?.toLocaleString() ?? "—")}${td(chg(m?.organic_traffic, m?.prev_traffic))}</tr>
+  <tr>${td("Backlinks")}${td(m?.backlinks?.toLocaleString() ?? "—")}${td(m?.prev_backlinks?.toLocaleString() ?? "—")}${td(chg(m?.backlinks, m?.prev_backlinks))}</tr>
+  <tr>${td("Domain Authority")}${td(m?.domain_authority ?? "—")}${td(m?.prev_da ?? "—")}${td(chg(m?.domain_authority, m?.prev_da))}</tr>
+  <tr>${td("GSC Impressions")}${td(m?.impressions?.toLocaleString() ?? "—")}${td("—")}${td("—")}</tr>
+  <tr>${td("GSC Clicks")}${td(m?.clicks?.toLocaleString() ?? "—")}${td("—")}${td("—")}</tr>
+  <tr>${td("Avg. Position")}${td(m?.avg_position ?? "—")}${td("—")}${td("—")}</tr>
+  <tr>${td("Pages Indexed")}${td(m?.pages_indexed ?? "—")}${td("—")}${td("—")}</tr>
+  <tr>${td("Technical Issues Fixed")}${td(m?.technical_fixed ?? "—")}${td("—")}${td("—")}</tr>
+</table>
 
-        ${m?.notes ? `<h2>Notes</h2><div class="note-box">${m.notes}</div>` : ""}
-        ${m?.recommendations ? `<h2>Recommendations</h2><div class="note-box">${m.recommendations}</div>` : ""}
+${(op || tech || schema || local) ? `
+${h2("SEO Health Scores", "#7c3aed")}
+<table>
+  <tr>${th("Section")}${th("Score /100")}${th("Issues Found")}${th("Issues Fixed")}</tr>
+  ${op ? `<tr>${td("On-Page SEO")}${td(op.on_page_score ? `${op.on_page_score}/100` : "—")}${td(op.issues_found ?? "—", "text-align:center;")}${td(op.issues_fixed ?? "—", "text-align:center;")}</tr>` : ""}
+  ${tech ? `<tr>${td("Technical SEO")}${td(tech.technical_score ? `${tech.technical_score}/100` : "—")}${td(tech.issues_found ?? "—", "text-align:center;")}${td(tech.issues_fixed ?? "—", "text-align:center;")}</tr>` : ""}
+  ${schema ? `<tr>${td("Schema SEO")}${td(schema.schema_score ? `${schema.schema_score}/100` : "—")}${td(schema.issues_found ?? "—", "text-align:center;")}${td(schema.issues_fixed ?? "—", "text-align:center;")}</tr>` : ""}
+  ${local ? `<tr>${td("Local SEO")}${td(local.local_seo_score ? `${local.local_seo_score}/100` : "—")}${td(local.issues_found ?? "—", "text-align:center;")}${td(local.issues_fixed ?? "—", "text-align:center;")}</tr>` : ""}
+</table>` : ""}
 
-        <p style="margin-top:40px;color:#94a3b8;font-size:8pt;text-align:center;">Generated by ${agency?.agency_name || "SEO Report Pad"} · ${report.month} ${report.year}</p>
-      </body></html>`;
+${kws.length ? `
+${h2("Keyword Rankings", "#059669")}
+<table>
+  <tr>${th("Keyword")}${th("Prev Rank")}${th("Current Rank")}${th("Change")}${th("Search Volume")}</tr>
+  ${kwRows}
+</table>` : ""}
+
+${work.length ? `
+${h2("Work Done This Month", "#d97706")}
+<table>
+  <tr>${th("Category")}${th("Tasks")}</tr>
+  ${workRows}
+</table>` : ""}
+
+${op ? `
+${h2("On-Page SEO Details", "#2563eb")}
+<table>
+  <tr>${th("Item")}${th("Value")}</tr>
+  <tr>${td("Title Tag")}${td(op.title_tag ?? "—")}</tr>
+  <tr>${td("Title Length")}${td(op.title_length ? `${op.title_length} characters` : "—")}</tr>
+  <tr>${td("Title Has Keyword")}${td(boolW(op.title_has_keyword))}</tr>
+  <tr>${td("Meta Description Length")}${td(op.meta_length ? `${op.meta_length} characters` : "—")}</tr>
+  <tr>${td("Meta Has Keyword")}${td(boolW(op.meta_has_keyword))}</tr>
+  <tr>${td("H1 Count")}${td(op.h1_count ?? "—")}</tr>
+  <tr>${td("H2 Count")}${td(op.h2_count ?? "—")}</tr>
+  <tr>${td("Word Count")}${td(op.word_count?.toLocaleString() ?? "—")}</tr>
+  <tr>${td("Thin Content Pages")}${td(op.thin_content_pages ?? "—")}</tr>
+  <tr>${td("Duplicate Content Pages")}${td(op.duplicate_content_pages ?? "—")}</tr>
+  <tr>${td("Total Images")}${td(op.total_images ?? "—")}</tr>
+  <tr>${td("Images Missing Alt")}${td(op.images_missing_alt ?? "—")}</tr>
+  <tr>${td("Internal Links")}${td(op.internal_links_count ?? "—")}</tr>
+  <tr>${td("Broken Internal Links")}${td(op.broken_internal_links ?? "—")}</tr>
+  <tr>${td("Mobile Speed Score")}${td(op.mobile_speed_score ? `${op.mobile_speed_score}/100` : "—")}</tr>
+  <tr>${td("Desktop Speed Score")}${td(op.desktop_speed_score ? `${op.desktop_speed_score}/100` : "—")}</tr>
+  <tr>${td("Canonical Set")}${td(boolW(op.canonical_set))}</tr>
+  <tr>${td("Schema Markup")}${td(boolW(op.schema_markup))}</tr>
+  <tr>${td("Robots.txt OK")}${td(boolW(op.robots_txt_ok))}</tr>
+  <tr>${td("Sitemap Submitted")}${td(boolW(op.sitemap_submitted))}</tr>
+</table>
+${op.notes ? noteBox(op.notes, "#2563eb") : ""}` : ""}
+
+${tech ? `
+${h2("Technical SEO Details", "#db2777")}
+<table>
+  <tr>${th("Item")}${th("Value")}</tr>
+  <tr>${td("HTTPS Enabled")}${td(boolW(tech.https_ok))}</tr>
+  <tr>${td("SSL Valid")}${td(boolW(tech.ssl_valid))}</tr>
+  <tr>${td("Mobile Friendly")}${td(boolW(tech.mobile_friendly))}</tr>
+  <tr>${td("Robots.txt OK")}${td(boolW(tech.robots_txt_ok))}</tr>
+  <tr>${td("Sitemap Submitted")}${td(boolW(tech.xml_sitemap_submitted))}</tr>
+  <tr>${td("GSC Connected")}${td(boolW(tech.google_search_console_connected))}</tr>
+  <tr>${td("CDN Used")}${td(boolW(tech.cdn_used))}</tr>
+  <tr>${td("Caching Enabled")}${td(boolW(tech.caching_enabled))}</tr>
+  <tr>${td("Compression Enabled")}${td(boolW(tech.compression_enabled))}</tr>
+  <tr>${td("Pages Crawled")}${td(tech.pages_crawled ?? "—")}</tr>
+  <tr>${td("Pages Indexed")}${td(tech.pages_indexed ?? "—")}</tr>
+  <tr>${td("Broken Links")}${td(tech.broken_links ?? "—")}</tr>
+  <tr>${td("Crawl Errors")}${td(tech.crawl_errors ?? "—")}</tr>
+  <tr>${td("Redirect Chains")}${td(tech.redirect_chains ?? "—")}</tr>
+  <tr>${td("TTFB (ms)")}${td(tech.ttfb_ms ?? "—")}</tr>
+</table>
+${tech.notes ? noteBox(tech.notes, "#db2777") : ""}` : ""}
+
+${schema ? `
+${h2("Schema Markup", "#d97706")}
+<table>
+  <tr>${th("Schema Type")}${th("Present")}</tr>
+  <tr>${td("Organization")}${td(boolW(schema.has_organization))}</tr>
+  <tr>${td("Website")}${td(boolW(schema.has_website))}</tr>
+  <tr>${td("Article")}${td(boolW(schema.has_article))}</tr>
+  <tr>${td("FAQ")}${td(boolW(schema.has_faq))}</tr>
+  <tr>${td("Breadcrumb")}${td(boolW(schema.has_breadcrumb))}</tr>
+  <tr>${td("Local Business")}${td(boolW(schema.has_local_business))}</tr>
+  <tr>${td("Product")}${td(boolW(schema.has_product))}</tr>
+  <tr>${td("Service")}${td(boolW(schema.has_service))}</tr>
+  <tr>${td("Pages With Schema")}${td(schema.pages_with_schema ?? "—")}</tr>
+  <tr>${td("Pages Missing Schema")}${td(schema.pages_missing_schema ?? "—")}</tr>
+  <tr>${td("Rich Results Eligible")}${td(boolW(schema.rich_results_eligible))}</tr>
+  <tr>${td("Validator Passed")}${td(boolW(schema.schema_validator_passed))}</tr>
+</table>
+${schema.notes ? noteBox(schema.notes, "#d97706") : ""}` : ""}
+
+${local ? `
+${h2("Local SEO", "#059669")}
+<table>
+  <tr>${th("Item")}${th("Value")}</tr>
+  <tr>${td("GBP Name")}${td(local.gbp_name ?? "—")}</tr>
+  <tr>${td("GBP Verified")}${td(boolW(local.gbp_verified))}</tr>
+  <tr>${td("GBP Rating")}${td(local.gbp_rating ?? "—")}</tr>
+  <tr>${td("Total Reviews")}${td(local.gbp_reviews_total ?? "—")}</tr>
+  <tr>${td("New Reviews")}${td(local.gbp_reviews_new ?? "—")}</tr>
+  <tr>${td("NAP Consistent")}${td(boolW(local.nap_consistent))}</tr>
+  <tr>${td("Citations Total")}${td(local.citations_total ?? "—")}</tr>
+  <tr>${td("New Citations")}${td(local.citations_new ?? "—")}</tr>
+  <tr>${td("Map Pack Keywords")}${td(local.map_pack_keywords ?? "—")}</tr>
+</table>
+${local.notes ? noteBox(local.notes, "#059669") : ""}` : ""}
+
+${content ? `
+${h2("Content Strategy", "#059669")}
+${content.focus_topics ? `<p><b>Focus Topics:</b> ${content.focus_topics}</p>` : ""}
+${Array.isArray(content.blogs) && content.blogs.length ? `
+<table>
+  <tr>${th("Blog Title")}${th("Word Count")}${th("Status")}</tr>
+  ${(content.blogs as unknown as Record<string, unknown>[]).map((b) => `<tr>${td(String(b.title ?? "—"))}${td(b.words ? String(b.words) : "—", "text-align:center;")}${td(`<b style="color:green;">${b.status ?? "published"}</b>`, "text-align:center;")}</tr>`).join("")}
+</table>` : ""}
+${content.notes ? noteBox(String(content.notes), "#059669") : ""}` : ""}
+
+${backlinks.length ? `
+${h2("Backlinks (${backlinks.length})", "#6366f1")}
+<table>
+  <tr>${th("Source URL")}${th("Anchor Text")}${th("DA")}${th("Status")}</tr>
+  ${blRows}
+</table>` : ""}
+
+${competitors.length ? `
+${h2("Competitor Analysis", "#ef4444")}
+<table>
+  <tr>${th("Competitor")}${th("Website")}${th("DA")}${th("Notes")}</tr>
+  ${compRows}
+</table>` : ""}
+
+${m?.notes ? `${h2("Notes")}${noteBox(m.notes)}` : ""}
+${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommendations, "#059669")}` : ""}
+
+<p style="margin-top:40px;text-align:center;color:#94a3b8;font-size:8pt;border-top:1px solid #e2e8f0;padding-top:16px;">
+  Generated by ${agency.agency_name || "SEO Report Pad"} · ${report.month} ${report.year} · ${client.website}
+</p>
+
+</body></html>`;
 
     const blob = new Blob([html], { type: "application/msword" });
     const a = document.createElement("a");
