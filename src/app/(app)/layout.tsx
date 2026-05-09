@@ -1,9 +1,11 @@
 import Sidebar from "@/components/Sidebar";
 import SetupBanner from "@/components/SetupBanner";
+import SessionRefresher from "@/components/SessionRefresher";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
+      <SessionRefresher />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <SetupBanner />

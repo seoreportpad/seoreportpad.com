@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Type, List, Link as LinkIcon, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2, Save, Type, List, Link as LinkIcon, FileText, CheckCircle2, Copy, ExternalLink } from "lucide-react";
 
 interface Client { id: string; name: string; }
 
@@ -20,6 +20,7 @@ interface Brief {
   nlp_terms?: string;
   semantic_entities?: string;
   status: string;
+  token?: string;
 }
 
 export default function BriefForm({ initialClientId, briefId, initialData }: { initialClientId?: string; briefId?: string; initialData?: Brief }) {
@@ -104,12 +105,38 @@ export default function BriefForm({ initialClientId, briefId, initialData }: { i
             </h1>
             <p className="text-slate-500 text-sm mt-1">Define scope and requirements for the writer.</p>
           </div>
-          <button type="submit" disabled={loading}
-            className="flex items-center justify-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-50">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {loading ? "Saving..." : "Save Brief"}
-          </button>
+          <div className="flex items-center gap-3">
+            {initialData?.token && (
+              <button type="button" 
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/brief/${initialData.token}`);
+                  alert("Writer Link Copied!");
+                }}
+                className="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-3 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors shadow-sm">
+                <Copy size={16} /> Copy URL
+              </button>
+            )}
+            <button type="submit" disabled={loading}
+              className="flex items-center justify-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-50">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {loading ? "Saving..." : "Save Brief"}
+            </button>
+          </div>
         </div>
+
+        {initialData?.token && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between gap-4">
+            <div className="flex-1 truncate">
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Writer's Public Link</p>
+              <a href={`/brief/${initialData.token}`} target="_blank" rel="noreferrer" className="text-sm font-medium text-blue-800 hover:underline truncate block">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/brief/{initialData.token}
+              </a>
+            </div>
+            <a href={`/brief/${initialData.token}`} target="_blank" rel="noreferrer" className="shrink-0 flex items-center gap-1.5 text-xs bg-white text-blue-600 border border-blue-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition-colors">
+              <ExternalLink size={14} /> View Page
+            </a>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           <div>

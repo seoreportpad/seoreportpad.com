@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, FileText, StickyNote, BookOpen,
   Settings, ClipboardCheck, ChevronRight, X, Menu,
   CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers, Wrench, Network, Sparkles, Building2, DollarSign,
-  Image as ImageIcon, MapPin
+  Image as ImageIcon, MapPin, ListChecks, CheckSquare, BarChart3, Globe, Receipt, UserCheck, CalendarRange
 } from "lucide-react";
 
 const nav = [
@@ -16,11 +16,19 @@ const nav = [
   { href: "/dashboard/leads", label: "Leads", icon: Zap },
   { href: "/dashboard/reports", label: "Reports", icon: FileText },
   { href: "/dashboard/daily-log", label: "Daily Log", icon: CalendarDays },
-  { href: "/dashboard/keywords", label: "Keywords", icon: TrendingUp },
+  { href: "/dashboard/tasks", label: "Task Manager", icon: CheckSquare },
+  { href: "/dashboard/rank-tracker", label: "Rank Tracker", icon: TrendingUp },
+  { href: "/dashboard/keywords", label: "Keywords", icon: Target },
   { href: "/dashboard/semantic-map", label: "Semantic Map", icon: Network },
   { href: "/dashboard/backlinks", label: "Backlinks", icon: Link2 },
+  { href: "/dashboard/link-building", label: "Link Building", icon: Link2 },
   { href: "/dashboard/competitors", label: "Competitors", icon: Target },
+  { href: "/dashboard/content-calendar", label: "Content Calendar", icon: CalendarRange },
   { href: "/dashboard/audit", label: "SEO Audit", icon: ClipboardCheck },
+  { href: "/dashboard/onboarding", label: "Client Onboarding", icon: UserCheck },
+  { href: "/dashboard/client-portal", label: "Client Portal", icon: Globe },
+  { href: "/dashboard/invoices", label: "Invoices", icon: Receipt },
+  { href: "/dashboard/gsc-import", label: "GSC / GA Import", icon: BarChart3 },
   { href: "/dashboard/proposals", label: "Proposals", icon: Briefcase },
   { href: "/dashboard/bulk-reports", label: "Bulk Reports", icon: Layers },
   { href: "/dashboard/auto-reports", label: "Auto Reports", icon: Zap },
@@ -30,6 +38,10 @@ const nav = [
   { href: "/dashboard/tools/gmb", label: "GMB Optimizer", icon: MapPin },
   { href: "/dashboard/tools/schema", label: "Schema Builder", icon: Building2 },
   { href: "/dashboard/profitability", label: "Agency Profits", icon: DollarSign },
+  { href: "/dashboard/writer-sop", label: "Writer SOP", icon: ListChecks },
+  { href: "/dashboard/blog-sop", label: "Blog SOP", icon: ListChecks },
+  { href: "/dashboard/competitor-sop", label: "Competitor SOP", icon: ListChecks },
+  { href: "/dashboard/seo-sop", label: "SEO SOP", icon: ListChecks },
   { href: "/dashboard/content-briefs", label: "Content Briefs", icon: Sparkles },
   { href: "/dashboard/notes", label: "SEO Notes", icon: StickyNote },
   { href: "/dashboard/prompts", label: "Templates", icon: BookOpen },
