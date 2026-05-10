@@ -4,6 +4,8 @@ import {
   Plus, Trash2, Pencil, Save, X, Search, Filter,
   CheckCircle2, Clock, AlertCircle, Calendar, User,
   Flag, ChevronDown, ChevronUp, Circle, Loader2,
+  Download, BarChart3, RefreshCw, CheckSquare, Square,
+  Table2, Kanban,
 } from "lucide-react";
 
 interface Task {
@@ -16,11 +18,12 @@ interface Task {
   priority: "high" | "medium" | "low";
   status: "todo" | "in-progress" | "done";
   category: string;
+  recurring: "none" | "weekly" | "monthly";
   created_at: string;
 }
 
 const PRIORITIES = [
-  { value: "high",   label: "High",   color: "text-red-600 bg-red-50 border-red-200",     dot: "bg-red-500" },
+  { value: "high",   label: "High",   color: "text-red-600 bg-red-50 border-red-200",       dot: "bg-red-500" },
   { value: "medium", label: "Medium", color: "text-amber-600 bg-amber-50 border-amber-200", dot: "bg-amber-500" },
   { value: "low",    label: "Low",    color: "text-green-600 bg-green-50 border-green-200", dot: "bg-green-500" },
 ];
@@ -33,24 +36,32 @@ const STATUSES = [
 
 const CATEGORIES = ["On-Page SEO", "Technical SEO", "Content", "Backlinks", "Local SEO", "Reporting", "Other"];
 
-const LS_KEY = "seo_tasks_v1";
+const TEMPLATES = [
+  { title: "Monthly keyword rank check", category: "Reporting", priority: "high" as const, description: "Log positions for all tracked keywords in Rank Tracker." },
+  { title: "Fix broken links", category: "Technical SEO", priority: "high" as const, description: "Run Screaming Frog, identify broken links and redirect/fix." },
+  { title: "Publish 2 blog posts", category: "Content", priority: "medium" as const, description: "Write and publish two blog posts targeting priority keywords." },
+  { title: "Build 5 backlinks", category: "Backlinks", priority: "medium" as const, description: "Outreach and acquire 5 new quality backlinks this month." },
+  { title: "Update Google Business Profile", category: "Local SEO", priority: "low" as const, description: "Add photos, posts, and check for new reviews." },
+  { title: "Send monthly SEO report", category: "Reporting", priority: "high" as const, description: "Compile and send the monthly SEO report to client." },
+];
 
-function loadTasks(): Task[] {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; }
-}
-function saveTasks(tasks: Task[]) {
-  localStorage.setItem(LS_KEY, JSON.stringify(tasks));
-}
+const LS_KEY = "seo_tasks_v1";
+function loadTasks(): Task[] { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } }
+function saveTasks(tasks: Task[]) { localStorage.setItem(LS_KEY, JSON.stringify(tasks)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function today() { return new Date().toISOString().slice(0, 10); }
-function isOverdue(date: string) { return date && date < today(); }
+function isOverdue(date: string) { return !!date && date < today(); }
+function daysUntil(date: string): number | null {
+  if (!date) return null;
+  const d = Math.ceil((new Date(date + "T00:00:00").getTime() - new Date().setHours(0,0,0,0)) / 86400000);
+  return d;
+}
 
 const priCfg = (v: string) => PRIORITIES.find(p => p.value === v) ?? PRIORITIES[1];
-const stCfg  = (v: string) => STATUSES.find(s => s.value === v) ?? STATUSES[0];
 
 const empty = (): Omit<Task, "id" | "created_at"> => ({
   title: "", description: "", assignee: "", client: "",
-  due_date: "", priority: "medium", status: "todo", category: "On-Page SEO",
+  due_date: "", priority: "medium", status: "todo", category: "On-Page SEO", recurring: "none",
 });
 
 export default function TasksPage() {
@@ -65,6 +76,10 @@ export default function TasksPage() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<"kanban" | "table">("kanban");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showDone, setShowDone] = useState(true);
 
   useEffect(() => { setTasks(loadTasks()); }, []);
 
@@ -81,6 +96,12 @@ export default function TasksPage() {
     setSaving(false);
   };
 
+  const applyTemplate = (t: typeof TEMPLATES[0]) => {
+    setForm({ ...empty(), title: t.title, category: t.category, priority: t.priority, description: t.description });
+    setShowTemplates(false);
+    setShowForm(true);
+  };
+
   const updateTask = (id: string) => {
     persist(tasks.map(t => t.id === id ? { ...t, ...editData } : t));
     setEditing(null);
@@ -89,6 +110,7 @@ export default function TasksPage() {
   const deleteTask = (id: string) => {
     if (!confirm("Delete this task?")) return;
     persist(tasks.filter(t => t.id !== id));
+    setSelected(prev => { const s = new Set(prev); s.delete(id); return s; });
   };
 
   const cycleStatus = (id: string) => {
@@ -98,6 +120,44 @@ export default function TasksPage() {
       const next = order[(order.indexOf(t.status) + 1) % order.length];
       return { ...t, status: next };
     }));
+  };
+
+  const bulkDelete = () => {
+    if (!confirm(`Delete ${selected.size} task(s)?`)) return;
+    persist(tasks.filter(t => !selected.has(t.id)));
+    setSelected(new Set());
+  };
+
+  const bulkMarkDone = () => {
+    persist(tasks.map(t => selected.has(t.id) ? { ...t, status: "done" as const } : t));
+    setSelected(new Set());
+  };
+
+  const renewRecurring = () => {
+    const renewed: Task[] = [];
+    for (const t of tasks) {
+      if (t.status === "done" && t.recurring !== "none") {
+        const due = t.due_date ? new Date(t.due_date + "T00:00:00") : new Date();
+        if (t.recurring === "weekly") due.setDate(due.getDate() + 7);
+        else due.setMonth(due.getMonth() + 1);
+        renewed.push({ ...t, id: uid(), status: "todo", created_at: new Date().toISOString(), due_date: due.toISOString().slice(0, 10) });
+      }
+    }
+    if (!renewed.length) { alert("No completed recurring tasks to renew."); return; }
+    persist([...renewed, ...tasks]);
+    alert(`${renewed.length} recurring task(s) renewed.`);
+  };
+
+  const exportCSV = () => {
+    const rows = [["Title", "Client", "Assignee", "Category", "Priority", "Status", "Due Date", "Recurring", "Description"]];
+    for (const t of filtered) {
+      rows.push([t.title, t.client, t.assignee, t.category, t.priority, t.status, t.due_date, t.recurring, t.description]);
+    }
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = `tasks-${today()}.csv`;
+    a.click();
   };
 
   const filtered = useMemo(() => tasks.filter(t => {
@@ -110,35 +170,159 @@ export default function TasksPage() {
       && (filterCategory === "all" || t.category === filterCategory);
   }), [tasks, search, filterStatus, filterPriority, filterCategory]);
 
-  const byStatus = (s: string) => filtered.filter(t => t.status === s);
+  const byStatus = (s: string) => filtered.filter(t => t.status === s && (showDone || s !== "done"));
   const totalDone = tasks.filter(t => t.status === "done").length;
   const overdue = tasks.filter(t => t.status !== "done" && isOverdue(t.due_date)).length;
   const inProgress = tasks.filter(t => t.status === "in-progress").length;
+  const completionPct = tasks.length ? Math.round((totalDone / tasks.length) * 100) : 0;
+
+  // Category breakdown
+  const catBreakdown = useMemo(() => {
+    const map: Record<string, { total: number; done: number }> = {};
+    for (const t of tasks) {
+      if (!map[t.category]) map[t.category] = { total: 0, done: 0 };
+      map[t.category].total++;
+      if (t.status === "done") map[t.category].done++;
+    }
+    return Object.entries(map).map(([cat, v]) => ({ cat, ...v, pct: Math.round((v.done / v.total) * 100) }));
+  }, [tasks]);
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(t => selected.has(t.id));
 
   const inputCls = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white";
   const labelCls = "text-xs font-semibold text-slate-600 block mb-1.5";
 
+  const TaskCard = ({ task }: { task: Task }) => {
+    const pri = priCfg(task.priority);
+    const overdueflag = task.status !== "done" && isOverdue(task.due_date);
+    const days = daysUntil(task.due_date);
+    const isSelected = selected.has(task.id);
+
+    return (
+      <div className={`bg-slate-50 rounded-xl border p-3 group transition-all ${isSelected ? "border-violet-300 bg-violet-50/30" : "border-slate-100 hover:border-violet-200 hover:bg-violet-50/20"}`}>
+        {editing === task.id ? (
+          <div className="space-y-2">
+            <input value={editData.title ?? ""} onChange={e => setEditData({ ...editData, title: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            <input value={editData.assignee ?? ""} onChange={e => setEditData({ ...editData, assignee: e.target.value })}
+              placeholder="Assignee" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
+            <input value={editData.client ?? ""} onChange={e => setEditData({ ...editData, client: e.target.value })}
+              placeholder="Client" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
+            <input type="date" value={editData.due_date ?? ""} onChange={e => setEditData({ ...editData, due_date: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
+            <div className="grid grid-cols-2 gap-2">
+              <select value={editData.priority ?? "medium"} onChange={e => setEditData({ ...editData, priority: e.target.value as Task["priority"] })}
+                className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
+                {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+              <select value={editData.recurring ?? "none"} onChange={e => setEditData({ ...editData, recurring: e.target.value as Task["recurring"] })}
+                className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
+                <option value="none">No Recur</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <textarea value={editData.description ?? ""} onChange={e => setEditData({ ...editData, description: e.target.value })}
+              rows={2} placeholder="Description" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none resize-none" />
+            <div className="flex gap-2">
+              <button onClick={() => updateTask(task.id)} className="flex items-center gap-1 text-xs bg-violet-600 text-white px-3 py-1.5 rounded-lg hover:bg-violet-700">
+                <Save size={11} /> Save
+              </button>
+              <button onClick={() => setEditing(null)} className="text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start gap-2 mb-2">
+              <button onClick={() => setSelected(prev => { const s = new Set(prev); s.has(task.id) ? s.delete(task.id) : s.add(task.id); return s; })}
+                className="text-slate-300 hover:text-violet-500 shrink-0 mt-0.5">
+                {isSelected ? <CheckSquare size={14} className="text-violet-500" /> : <Square size={14} />}
+              </button>
+              <button onClick={() => cycleStatus(task.id)} title="Click to advance status" className="mt-0.5 shrink-0">
+                {task.status === "done" ? <CheckCircle2 size={16} className="text-green-500" />
+                  : task.status === "in-progress" ? <Clock size={16} className="text-amber-500" />
+                  : <Circle size={16} className="text-slate-300 hover:text-violet-400" />}
+              </button>
+              <p className={`text-sm font-semibold flex-1 leading-tight ${task.status === "done" ? "line-through text-slate-400" : "text-slate-700"}`}>
+                {task.title}
+              </p>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <button onClick={() => { setEditing(task.id); setEditData({ ...task }); }}
+                  className="p-1 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
+                  <Pencil size={11} />
+                </button>
+                <button onClick={() => deleteTask(task.id)}
+                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            </div>
+
+            {task.description && (
+              <p className="text-xs text-slate-400 mb-2 leading-relaxed line-clamp-2 pl-8">{task.description}</p>
+            )}
+
+            <div className="flex flex-wrap gap-1.5 items-center pl-8">
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${pri.color}`}>{pri.label}</span>
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{task.category}</span>
+              {task.recurring !== "none" && (
+                <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <RefreshCw size={9} />{task.recurring}
+                </span>
+              )}
+              {task.assignee && <span className="text-xs text-slate-400 flex items-center gap-1"><User size={10} />{task.assignee}</span>}
+              {task.client && <span className="text-xs text-slate-400">{task.client}</span>}
+            </div>
+
+            {task.due_date && (
+              <div className={`flex items-center gap-1 mt-2 text-xs font-medium pl-8 ${overdueflag ? "text-red-500" : days !== null && days <= 2 ? "text-amber-500" : "text-slate-400"}`}>
+                {overdueflag && <AlertCircle size={10} />}
+                <Calendar size={10} />
+                {overdueflag ? `Overdue · ` : days === 0 ? "Due today · " : days === 1 ? "Due tomorrow · " : `Due in ${days}d · `}
+                {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-black text-slate-800">Task Manager</h1>
-          <p className="text-slate-500 text-sm mt-1">Assign tasks, set deadlines, track progress across your SEO team</p>
+          <p className="text-slate-500 text-sm mt-1">Assign tasks, set deadlines, track progress</p>
         </div>
-        <button onClick={() => { setShowForm(true); setForm(empty()); }}
-          className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200 self-start">
-          <Plus size={16} /> Add Task
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={renewRecurring}
+            className="flex items-center gap-2 border border-slate-200 bg-white text-slate-600 px-3 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <RefreshCw size={14} /> Renew Recurring
+          </button>
+          <button onClick={exportCSV}
+            className="flex items-center gap-2 border border-slate-200 bg-white text-slate-600 px-3 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <Download size={14} /> Export CSV
+          </button>
+          <button onClick={() => setShowTemplates(!showTemplates)}
+            className="flex items-center gap-2 border border-slate-200 bg-white text-slate-600 px-3 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <BarChart3 size={14} /> Templates
+          </button>
+          <button onClick={() => { setShowForm(true); setForm(empty()); }}
+            className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200">
+            <Plus size={16} /> Add Task
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {[
-          { label: "Total Tasks",   value: tasks.length,  color: "text-violet-600", bg: "bg-violet-50",  Icon: Flag },
-          { label: "In Progress",   value: inProgress,    color: "text-amber-600",  bg: "bg-amber-50",   Icon: Clock },
-          { label: "Completed",     value: totalDone,     color: "text-green-600",  bg: "bg-green-50",   Icon: CheckCircle2 },
-          { label: "Overdue",       value: overdue,       color: "text-red-600",    bg: "bg-red-50",     Icon: AlertCircle },
+          { label: "Total Tasks",  value: tasks.length,  color: "text-violet-600", bg: "bg-violet-50",  Icon: Flag },
+          { label: "In Progress",  value: inProgress,    color: "text-amber-600",  bg: "bg-amber-50",   Icon: Clock },
+          { label: "Completed",    value: totalDone,     color: "text-green-600",  bg: "bg-green-50",   Icon: CheckCircle2 },
+          { label: "Overdue",      value: overdue,       color: "text-red-600",    bg: "bg-red-50",     Icon: AlertCircle },
         ].map(({ label, value, color, bg, Icon }) => (
           <div key={label} className={`${bg} rounded-2xl border border-slate-100 shadow-sm px-5 py-4 flex items-center gap-3`}>
             <Icon size={20} className={`${color} shrink-0 opacity-70`} />
@@ -150,6 +334,55 @@ export default function TasksPage() {
         ))}
       </div>
 
+      {/* Overall progress bar */}
+      {tasks.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-5 py-4 mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-bold text-slate-700">Overall Progress</p>
+            <span className="text-sm font-black text-violet-600">{completionPct}%</span>
+          </div>
+          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
+            <div className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all" style={{ width: `${completionPct}%` }} />
+          </div>
+          {catBreakdown.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {catBreakdown.map(c => (
+                <div key={c.cat} className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs text-slate-500 truncate">{c.cat}</span>
+                      <span className="text-xs font-semibold text-slate-600">{c.pct}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-violet-400 rounded-full" style={{ width: `${c.pct}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Templates dropdown */}
+      {showTemplates && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-5">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Quick Templates</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {TEMPLATES.map((t, i) => (
+              <button key={i} onClick={() => applyTemplate(t)}
+                className="text-left p-3 rounded-xl border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all">
+                <p className="text-sm font-semibold text-slate-700 mb-1">{t.title}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{t.category}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${priCfg(t.priority).color}`}>{t.priority}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Add task form */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-violet-100 shadow-sm mb-6 overflow-hidden">
@@ -158,13 +391,11 @@ export default function TasksPage() {
               <Plus size={16} className="text-violet-600" />
               <h2 className="font-bold text-slate-700">New Task</h2>
             </div>
-            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
-              <X size={16} />
-            </button>
+            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"><X size={16} /></button>
           </div>
           <form onSubmit={addTask} className="p-6 space-y-4">
             <div>
-              <label className={labelCls}>Task Title <span className="text-red-500">*</span></label>
+              <label className={labelCls}>Task Title *</label>
               <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Fix broken links on homepage" className={inputCls} />
             </div>
@@ -181,11 +412,10 @@ export default function TasksPage() {
               </div>
               <div>
                 <label className={labelCls}><Calendar size={11} className="inline mr-1" />Due Date</label>
-                <input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })}
-                  className={inputCls} />
+                <input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className={inputCls} />
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className={labelCls}>Category</label>
                 <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={inputCls}>
@@ -204,27 +434,33 @@ export default function TasksPage() {
                   {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
+              <div>
+                <label className={labelCls}><RefreshCw size={11} className="inline mr-1" />Recurring</label>
+                <select value={form.recurring} onChange={e => setForm({ ...form, recurring: e.target.value as Task["recurring"] })} className={inputCls}>
+                  <option value="none">None</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className={labelCls}>Description (optional)</label>
               <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                rows={2} placeholder="Task details, context, links..." className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none" />
+                rows={2} placeholder="Task details, context, links..."
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none" />
             </div>
             <div className="flex gap-3">
               <button type="submit" disabled={saving}
-                className="flex items-center gap-2 bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-2 bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 disabled:opacity-50">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Task
               </button>
-              <button type="button" onClick={() => setShowForm(false)}
-                className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
-                Cancel
-              </button>
+              <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium hover:bg-slate-50">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Filters */}
+      {/* Filters + view toggle */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-5 py-4 mb-5">
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-48">
@@ -237,10 +473,22 @@ export default function TasksPage() {
             <option value="all">All Statuses</option>
             {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
+          <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1">
+            <button onClick={() => setView("kanban")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === "kanban" ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-white"}`}>
+              <Kanban size={12} /> Kanban
+            </button>
+            <button onClick={() => setView("table")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === "table" ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-white"}`}>
+              <Table2 size={12} /> Table
+            </button>
+          </div>
           <button onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl border transition-colors ${showFilters ? "bg-slate-800 text-white border-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-            <Filter size={13} /> More {showFilters ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <Filter size={13} /> Filters {showFilters ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
+          <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer">
+            <input type="checkbox" checked={showDone} onChange={e => setShowDone(e.target.checked)} className="rounded" />
+            Show Done
+          </label>
           <span className="text-xs text-slate-400 ml-auto">{filtered.length} tasks</span>
         </div>
         {showFilters && (
@@ -261,118 +509,110 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* Kanban columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {STATUSES.map(st => {
-          const colTasks = byStatus(st.value);
-          const StatusIcon = st.icon;
-          return (
-            <div key={st.value} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusIcon size={14} className={st.value === "done" ? "text-green-600" : st.value === "in-progress" ? "text-amber-600" : "text-slate-400"} />
-                  <span className="text-sm font-bold text-slate-700">{st.label}</span>
-                </div>
-                <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">{colTasks.length}</span>
-              </div>
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="mb-4 bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3 flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-bold text-violet-800">{selected.size} selected</span>
+          <button onClick={bulkMarkDone} className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-green-700">Mark Done</button>
+          <button onClick={bulkDelete} className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-red-600 flex items-center gap-1">
+            <Trash2 size={11} /> Delete
+          </button>
+          <button onClick={() => setSelected(new Set())} className="ml-auto text-xs text-violet-600 hover:text-violet-800 font-semibold">Deselect all</button>
+        </div>
+      )}
 
-              <div className="p-3 space-y-3 min-h-[200px]">
-                {colTasks.length === 0 && (
-                  <p className="text-xs text-slate-300 text-center py-8">No tasks</p>
-                )}
-                {colTasks.map(task => {
+      {/* Table view */}
+      {view === "table" ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          {filtered.length === 0 ? (
+            <p className="text-center py-12 text-slate-400 text-sm">No tasks match your filters.</p>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-100">
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    <button onClick={() => allFilteredSelected ? setSelected(new Set()) : setSelected(new Set(filtered.map(t => t.id)))}
+                      className="text-slate-400 hover:text-violet-600">
+                      {allFilteredSelected ? <CheckSquare size={14} className="text-violet-600" /> : <Square size={14} />}
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">Task</th>
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">Client</th>
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">Priority</th>
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">Due</th>
+                  <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-widest">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map(task => {
                   const pri = priCfg(task.priority);
                   const overdueflag = task.status !== "done" && isOverdue(task.due_date);
+                  const days = daysUntil(task.due_date);
+                  const isSelected = selected.has(task.id);
                   return (
-                    <div key={task.id} className="bg-slate-50 rounded-xl border border-slate-100 p-3 group hover:border-violet-200 hover:bg-violet-50/20 transition-all">
-                      {editing === task.id ? (
-                        <div className="space-y-2">
-                          <input value={editData.title ?? ""} onChange={e => setEditData({ ...editData, title: e.target.value })}
-                            className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-                          <input value={editData.assignee ?? ""} onChange={e => setEditData({ ...editData, assignee: e.target.value })}
-                            placeholder="Assignee" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
-                          <input value={editData.client ?? ""} onChange={e => setEditData({ ...editData, client: e.target.value })}
-                            placeholder="Client" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
-                          <input type="date" value={editData.due_date ?? ""} onChange={e => setEditData({ ...editData, due_date: e.target.value })}
-                            className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" />
-                          <select value={editData.priority ?? "medium"} onChange={e => setEditData({ ...editData, priority: e.target.value as Task["priority"] })}
-                            className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
-                            {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                          </select>
-                          <textarea value={editData.description ?? ""} onChange={e => setEditData({ ...editData, description: e.target.value })}
-                            rows={2} placeholder="Description" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none resize-none" />
-                          <div className="flex gap-2">
-                            <button onClick={() => updateTask(task.id)}
-                              className="flex items-center gap-1 text-xs bg-violet-600 text-white px-3 py-1.5 rounded-lg hover:bg-violet-700">
-                              <Save size={11} /> Save
-                            </button>
-                            <button onClick={() => setEditing(null)}
-                              className="text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50">
-                              Cancel
-                            </button>
-                          </div>
+                    <tr key={task.id} className={`hover:bg-slate-50/50 group ${isSelected ? "bg-violet-50/30" : ""}`}>
+                      <td className="px-4 py-3">
+                        <button onClick={() => setSelected(prev => { const s = new Set(prev); s.has(task.id) ? s.delete(task.id) : s.add(task.id); return s; })}
+                          className="text-slate-300 hover:text-violet-500">
+                          {isSelected ? <CheckSquare size={14} className="text-violet-500" /> : <Square size={14} />}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className={`text-sm font-semibold ${task.status === "done" ? "line-through text-slate-400" : "text-slate-700"}`}>{task.title}</p>
+                        <p className="text-xs text-slate-400">{task.category}</p>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-500">{task.client || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${pri.color}`}>{pri.label}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => cycleStatus(task.id)} className={`text-xs font-semibold px-2 py-0.5 rounded-full border transition-all hover:opacity-80 ${STATUSES.find(s => s.value === task.status)?.color}`}>
+                          {STATUSES.find(s => s.value === task.status)?.label}
+                        </button>
+                      </td>
+                      <td className={`px-4 py-3 text-xs font-medium ${overdueflag ? "text-red-500" : days !== null && days <= 2 ? "text-amber-500" : "text-slate-400"}`}>
+                        {task.due_date ? (overdueflag ? "Overdue" : days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days}d`) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                          <button onClick={() => { setEditing(task.id); setEditData({ ...task }); setView("kanban"); }}
+                            className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg"><Pencil size={12} /></button>
+                          <button onClick={() => deleteTask(task.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={12} /></button>
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <button onClick={() => cycleStatus(task.id)} title="Click to advance status"
-                              className="mt-0.5 shrink-0">
-                              {task.status === "done"
-                                ? <CheckCircle2 size={16} className="text-green-500" />
-                                : task.status === "in-progress"
-                                ? <Clock size={16} className="text-amber-500" />
-                                : <Circle size={16} className="text-slate-300 hover:text-violet-400" />}
-                            </button>
-                            <p className={`text-sm font-semibold flex-1 leading-tight ${task.status === "done" ? "line-through text-slate-400" : "text-slate-700"}`}>
-                              {task.title}
-                            </p>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditing(task.id); setEditData({ ...task }); }}
-                                className="p-1 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
-                                <Pencil size={11} />
-                              </button>
-                              <button onClick={() => deleteTask(task.id)}
-                                className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                <Trash2 size={11} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {task.description && (
-                            <p className="text-xs text-slate-400 mb-2 leading-relaxed line-clamp-2">{task.description}</p>
-                          )}
-
-                          <div className="flex flex-wrap gap-1.5 items-center">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${pri.color}`}>{pri.label}</span>
-                            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{task.category}</span>
-                            {task.assignee && (
-                              <span className="text-xs text-slate-400 flex items-center gap-1">
-                                <User size={10} />{task.assignee}
-                              </span>
-                            )}
-                            {task.client && (
-                              <span className="text-xs text-slate-400">{task.client}</span>
-                            )}
-                          </div>
-
-                          {task.due_date && (
-                            <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${overdueflag ? "text-red-500" : "text-slate-400"}`}>
-                              {overdueflag && <AlertCircle size={10} />}
-                              <Calendar size={10} />
-                              {overdueflag ? "Overdue · " : "Due "}
-                              {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+                      </td>
+                    </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ) : (
+        /* Kanban view */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {STATUSES.map(st => {
+            const colTasks = byStatus(st.value);
+            const StatusIcon = st.icon;
+            return (
+              <div key={st.value} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <StatusIcon size={14} className={st.value === "done" ? "text-green-600" : st.value === "in-progress" ? "text-amber-600" : "text-slate-400"} />
+                    <span className="text-sm font-bold text-slate-700">{st.label}</span>
+                  </div>
+                  <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">{colTasks.length}</span>
+                </div>
+                <div className="p-3 space-y-3 min-h-[200px]">
+                  {colTasks.length === 0 && <p className="text-xs text-slate-300 text-center py-8">No tasks</p>}
+                  {colTasks.map(task => <TaskCard key={task.id} task={task} />)}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

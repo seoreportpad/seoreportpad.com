@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser, jsonWithCookies } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json([]);
   try {
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
     const sb = createServiceClient();
     const { searchParams } = req.nextUrl;
     const clientId = searchParams.get("clientId");
     const keyword = searchParams.get("keyword");
-    let query = sb.from("rank_history").select("*, clients(name)").order("created_at", { ascending: false });
+    let query = sb.from("rank_history").select("*, clients(name)").eq("user_id", auth.user.id).order("created_at", { ascending: false });
     if (clientId) query = query.eq("client_id", clientId);
     if (keyword) query = query.ilike("keyword", `%${keyword}%`);
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data ?? []);
+    return jsonWithCookies(data ?? [], auth);
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }
 

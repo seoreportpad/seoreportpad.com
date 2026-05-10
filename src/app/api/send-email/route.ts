@@ -8,6 +8,14 @@ function replaceVars(text: string, vars: Record<string, string>) {
 }
 
 export async function POST(req: NextRequest) {
+  // Must be authenticated to send email
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+  }
+
+  const auth = await getAuthenticatedUser(req);
+  if (!auth.user) return auth.refreshedResponse!;
+
   const body = await req.json();
   let { to, subject, html, reportId, month, year, clientName } = body;
 
@@ -15,45 +23,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Load agency branding if Supabase is configured
+  // Load agency branding
   let agencyName = "SEO Reports";
   let agencyColor = "#2563eb";
   let agencyFrom = "reports@seoreportpad.com";
   let templateSubject = "";
   let templateBody = "";
 
-  if (isSupabaseConfigured()) {
-    try {
-      const auth = await getAuthenticatedUser(req);
-      const sb = createServiceClient();
-      if (auth.user) {
-        const { data: agency } = await sb.from("agency_settings")
-          .select("agency_name, primary_color, from_email, email_subject, email_body")
-          .eq("user_id", auth.user.id)
-          .maybeSingle();
+  try {
+    const sb = createServiceClient();
+    const { data: agency } = await sb.from("agency_settings")
+      .select("agency_name, primary_color, from_email, email_subject, email_body")
+      .eq("user_id", auth.user.id)
+      .maybeSingle();
 
-        if (agency) {
-          if (agency.agency_name) agencyName = agency.agency_name;
-          if (agency.primary_color) agencyColor = agency.primary_color;
-          if (agency.from_email) agencyFrom = agency.from_email;
-          templateSubject = agency.email_subject || "";
-          templateBody = agency.email_body || "";
-        }
+    if (agency) {
+      if (agency.agency_name) agencyName = agency.agency_name;
+      if (agency.primary_color) agencyColor = agency.primary_color;
+      if (agency.from_email) agencyFrom = agency.from_email;
+      templateSubject = agency.email_subject || "";
+      templateBody = agency.email_body || "";
+    }
 
-        if (reportId && (!month || !year || !clientName)) {
-          const { data: report } = await sb.from("reports")
-            .select("month, year, clients(name)")
-            .eq("id", reportId)
-            .single();
-          if (report) {
-            month = month || report.month;
-            year = year || report.year;
-            clientName = clientName || (report.clients as unknown as Record<string, unknown>)?.name;
-          }
-        }
+    if (reportId && (!month || !year || !clientName)) {
+      const { data: report } = await sb.from("reports")
+        .select("month, year, clients(name)")
+        .eq("id", reportId)
+        .eq("user_id", auth.user.id)
+        .single();
+      if (report) {
+        month = month || report.month;
+        year = year || report.year;
+        clientName = clientName || (report.clients as unknown as Record<string, unknown>)?.name;
       }
-    } catch { /* use defaults */ }
-  }
+    }
+  } catch { /* use defaults */ }
 
   const vars = { month: month || "", year: String(year || ""), client_name: clientName || "Valued Client" };
 
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
   <div style="background:#fff;padding:32px;border-radius:0 0 16px 16px;border:1px solid #e2e8f0;border-top:0">
     ${html}
     <div style="margin-top:40px; text-align:center;">
-       <a href="https://seoreportpad.com/portal/${reportId}" style="background:${agencyColor}; color:white; padding:12px 24px; border-radius:12px; text-decoration:none; font-weight:bold; display:inline-block;">View Full Interactive Report</a>
+       <a href="${process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin}/portal/${reportId}" style="background:${agencyColor}; color:white; padding:12px 24px; border-radius:12px; text-decoration:none; font-weight:bold; display:inline-block;">View Full Interactive Report</a>
     </div>
     <div style="margin-top:32px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center">
       <p style="margin:0;color:#94a3b8;font-size:12px">Sent by <strong>${agencyName}</strong> · Powered by SEO Report Manager</p>

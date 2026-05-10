@@ -65,6 +65,17 @@ function PriorityDot({ priority }: { priority: Priority }) {
   );
 }
 
+function CategoryScore({ score }: { score: number }) {
+  const color = score >= 80 ? "text-green-600 bg-green-50 border-green-200"
+    : score >= 50 ? "text-amber-600 bg-amber-50 border-amber-200"
+    : "text-red-600 bg-red-50 border-red-200";
+  return (
+    <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${color}`}>
+      {score}%
+    </span>
+  );
+}
+
 function CategoryCard({
   cat,
   checks,
@@ -78,9 +89,13 @@ function CategoryCard({
 
   const found = cat.issues.filter((i) => checks[i.id] === "found").length;
   const fixed = cat.issues.filter((i) => checks[i.id] === "fixed").length;
+  const na = cat.issues.filter((i) => checks[i.id] === "na").length;
   const checked = cat.issues.filter((i) => checks[i.id] && checks[i.id] !== "none").length;
 
-  const pct = Math.round((checked / cat.issues.length) * 100);
+  const actionable = cat.issues.length - na;
+  const score = actionable === 0 ? 100 : Math.round(((fixed + na) / cat.issues.length) * 100);
+  const fixPct = found + fixed > 0 ? Math.round((fixed / (found + fixed)) * 100) : 0;
+  const checkPct = Math.round((checked / cat.issues.length) * 100);
 
   return (
     <div className={`bg-white rounded-xl border shadow-sm transition-all ${open ? "border-slate-300" : "border-slate-100"}`}>
@@ -90,8 +105,9 @@ function CategoryCard({
         className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-slate-50/60 rounded-xl transition-colors"
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h3 className="font-semibold text-slate-800">{cat.label}</h3>
+            <CategoryScore score={score} />
             {found > 0 && (
               <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
                 {found} found
@@ -101,6 +117,9 @@ function CategoryCard({
               <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-medium">
                 {fixed} fixed
               </span>
+            )}
+            {found + fixed > 0 && (
+              <span className="text-xs text-slate-400">{fixPct}% resolved</span>
             )}
           </div>
           <p className="text-xs text-slate-400 truncate">{cat.description}</p>
@@ -112,7 +131,7 @@ function CategoryCard({
             <div className="w-24 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${found > 0 ? "bg-red-400" : fixed > 0 ? "bg-green-500" : "bg-blue-500"}`}
-                style={{ width: `${pct}%` }}
+                style={{ width: `${checkPct}%` }}
               />
             </div>
           </div>
@@ -284,6 +303,31 @@ export default function AuditPage() {
     a.click();
   };
 
+  const exportText = () => {
+    const clientName = selectedClientId === "all" ? "Workspace" : clients.find(c => c.id === selectedClientId)?.name || "Client";
+    const date = new Date().toLocaleDateString();
+    let txt = `SEO AUDIT REPORT — ${clientName}\nDate: ${date}\n${"=".repeat(50)}\n\n`;
+    for (const cat of SF_CATEGORIES) {
+      const catChecked = cat.issues.filter(i => checks[i.id] && checks[i.id] !== "none");
+      if (!catChecked.length) continue;
+      const fixed = catChecked.filter(i => checks[i.id] === "fixed").length;
+      const found = catChecked.filter(i => checks[i.id] === "found").length;
+      txt += `\n${cat.label.toUpperCase()}\n${"-".repeat(cat.label.length)}\n`;
+      txt += `Found: ${found} | Fixed: ${fixed}\n\n`;
+      for (const issue of catChecked) {
+        const state = checks[issue.id];
+        const mark = state === "fixed" ? "[FIXED]" : state === "found" ? "[FOUND]" : "[N/A]";
+        txt += `  ${mark} ${issue.label} (${issue.type}, ${issue.priority} priority)\n`;
+      }
+    }
+    if (txt.split("\n").length < 5) { alert("No checked items to export yet."); return; }
+    const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `SEO-Audit-${clientName}-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+  };
+
   const totalIssues = SF_CATEGORIES.reduce((s, c) => s + c.issues.length, 0);
   const totalFound = Object.values(checks).filter((v) => v === "found").length;
   const totalFixed = Object.values(checks).filter((v) => v === "fixed").length;
@@ -342,6 +386,10 @@ export default function AuditPage() {
           <button onClick={exportCSV}
             className="flex items-center gap-2 text-sm border border-slate-200 bg-white px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
             <Download size={14} /> Export CSV
+          </button>
+          <button onClick={exportText}
+            className="flex items-center gap-2 text-sm border border-slate-200 bg-white px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
+            <Download size={14} /> Export Text
           </button>
           <button onClick={resetAll}
             className="flex items-center gap-2 text-sm border border-slate-200 bg-white px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
