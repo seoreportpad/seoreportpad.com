@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Globe, Mail, Phone, Building2, Pencil,
   ExternalLink, Calendar, BarChart3, ChevronRight, Trash2, CheckCircle2, Type, Copy,
-  FileText, TrendingUp, TrendingDown, Plus, StickyNote
+  FileText, TrendingUp, TrendingDown, Plus, StickyNote, Layout,
 } from "lucide-react";
 
 interface Client {
@@ -41,6 +41,7 @@ export default function ClientDetailPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [briefs, setBriefs] = useState<Brief[]>([]);
+  const [websites, setWebsites] = useState<{ id: string; url: string; name: string; platform: string; status: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,11 +51,13 @@ export default function ClientDetailPage() {
       safe(`/api/reports?clientId=${id}`),
       safe(`/api/notes?clientId=${id}`),
       safe(`/api/briefs?clientId=${id}`),
-    ]).then(([c, r, n, b]) => {
+      safe(`/api/websites?clientId=${id}`),
+    ]).then(([c, r, n, b, w]) => {
       if (c && !c.error) setClient(c);
       setReports(Array.isArray(r) ? r : []);
       setNotes(Array.isArray(n) ? n : []);
       setBriefs(Array.isArray(b) ? b : []);
+      setWebsites(Array.isArray(w) ? w : []);
       setLoading(false);
     });
   }, [id]);
@@ -158,19 +161,71 @@ export default function ClientDetailPage() {
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-3 border-t border-slate-50">
+        <div className="grid grid-cols-4 border-t border-slate-50">
           {[
-            { label: "Total Reports", value: reports.length, icon: FileText, color: "text-blue-600" },
-            { label: "Reports Sent", value: sentCount, icon: BarChart3, color: "text-green-600" },
-            { label: "Total Traffic", value: totalTraffic > 0 ? totalTraffic.toLocaleString() : "—", icon: TrendingUp, color: "text-violet-600" },
+            { label: "Websites",      value: websites.length,                                          icon: Globe,     color: "text-teal-600" },
+            { label: "Total Reports", value: reports.length,                                           icon: FileText,  color: "text-blue-600" },
+            { label: "Reports Sent",  value: sentCount,                                                icon: BarChart3, color: "text-green-600" },
+            { label: "Total Traffic", value: totalTraffic > 0 ? totalTraffic.toLocaleString() : "—",  icon: TrendingUp, color: "text-violet-600" },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="py-4 px-6 text-center">
+            <div key={label} className="py-4 px-4 text-center">
               <Icon size={16} className={`${color} mx-auto mb-1.5`} />
               <p className="text-xl font-black text-slate-800">{value}</p>
               <p className="text-xs text-slate-400 mt-0.5">{label}</p>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Websites */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+          <div className="flex items-center gap-2">
+            <Globe size={16} className="text-teal-600" />
+            <h2 className="font-bold text-slate-700">Websites ({websites.length})</h2>
+          </div>
+          <Link href={`/dashboard/clients/${id}/websites`}
+            className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg transition-colors">
+            Manage <ChevronRight size={12} />
+          </Link>
+        </div>
+        {websites.length === 0 ? (
+          <div className="py-8 text-center">
+            <Globe size={28} className="mx-auto text-slate-200 mb-2" />
+            <p className="text-slate-400 text-sm font-medium">No websites added yet</p>
+            <Link href={`/dashboard/clients/${id}/websites`}
+              className="inline-flex items-center gap-1.5 text-xs text-teal-600 font-semibold mt-2 hover:underline">
+              <Plus size={12} /> Add first website
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {websites.map(w => (
+              <div key={w.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/50 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Layout size={14} className="text-teal-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">{w.name || "Website"}</p>
+                    <a href={w.url} target="_blank" rel="noreferrer"
+                      className="text-xs text-slate-400 hover:text-teal-600 truncate flex items-center gap-1">
+                      {w.url.replace(/^https?:\/\//, "")} <ExternalLink size={9} />
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {w.platform && <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full hidden sm:block">{w.platform}</span>}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${w.status === "active" ? "bg-green-100 text-green-600" : w.status === "paused" ? "bg-amber-100 text-amber-600" : "bg-red-100 text-red-500"}`}>
+                    {w.status}
+                  </span>
+                  <Link href={`/dashboard/reports?clientId=${id}&websiteId=${w.id}`}
+                    className="text-xs text-blue-500 hover:underline font-medium hidden sm:block">Reports</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main grid */}

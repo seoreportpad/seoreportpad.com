@@ -10,8 +10,10 @@ export async function GET(req: NextRequest) {
     const sb = createServiceClient();
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get("clientId");
-    let query = sb.from("reports").select("*, clients(id, name, website, email), metrics(*), keywords(*), work_done(*)").eq("user_id", auth.user.id).order("created_at", { ascending: false });
+    const websiteId = searchParams.get("websiteId");
+    let query = sb.from("reports").select("*, clients(id, name, website, email), metrics(*), keywords(*), work_done(*), websites(id, url, name)").eq("user_id", auth.user.id).order("created_at", { ascending: false });
     if (clientId) query = query.eq("client_id", clientId);
+    if (websiteId) query = query.eq("website_id", websiteId);
     const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return jsonWithCookies(data ?? [], auth);

@@ -36,6 +36,7 @@ function ReportsList() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const clientId = searchParams.get("clientId");
+  const websiteId = searchParams.get("websiteId");
 
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,11 @@ function ReportsList() {
 
   const load = () => {
     setLoading(true);
-    fetch(`/api/reports${clientId ? `?clientId=${clientId}` : ""}`)
+    const params = new URLSearchParams();
+    if (clientId) params.set("clientId", clientId);
+    if (websiteId) params.set("websiteId", websiteId);
+    const qs = params.toString();
+    fetch(`/api/reports${qs ? `?${qs}` : ""}`)
       .then(r => r.ok ? r.json() : []).catch(() => [])
       .then(d => setReports(Array.isArray(d) ? d : []))
       .finally(() => setLoading(false));
@@ -77,7 +82,7 @@ function ReportsList() {
     setCloneYear(now.getFullYear());
   }, []);
 
-  useEffect(() => { load(); }, [clientId]);
+  useEffect(() => { load(); }, [clientId, websiteId]);
 
   // Duplicate detection
   const isDuplicate = (cId: string, month: string, year: number, excludeId?: string) =>

@@ -139,6 +139,7 @@ interface Client { id: string; name: string; website?: string; }
 interface Props {
   reportId?: string;
   initialClientId?: string;
+  initialWebsiteId?: string;
   initial?: {
     client_id: string; month: string; year: number; status: string;
     keywords: Keyword[]; work_done: WorkItem[]; metrics?: Partial<Metrics>;
@@ -253,10 +254,12 @@ function AISummaryButton({ reportId, onGenerated }: { reportId: string; onGenera
   );
 }
 
-export default function ReportForm({ reportId, initialClientId, initial }: Props) {
+export default function ReportForm({ reportId, initialClientId, initialWebsiteId, initial }: Props) {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState(initial?.client_id ?? initialClientId ?? "");
+  const [websiteId, setWebsiteId] = useState(initialWebsiteId ?? "");
+  const [websites, setWebsites] = useState<{ id: string; url: string; name: string }[]>([]);
   const [month, setMonth] = useState(initial?.month ?? MONTHS[new Date().getMonth()]);
   const [year, setYear] = useState(initial?.year ?? new Date().getFullYear());
   const [status, setStatus] = useState(initial?.status ?? "draft");
@@ -390,6 +393,13 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
       .then(d => setClients(Array.isArray(d) ? d : []));
   }, []);
 
+  useEffect(() => {
+    if (!clientId) { setWebsites([]); return; }
+    fetch(`/api/websites?clientId=${clientId}`)
+      .then(r => r.ok ? r.json() : []).catch(() => [])
+      .then(d => setWebsites(Array.isArray(d) ? d : []));
+  }, [clientId]);
+
   const openImport = async () => {
     if (!clientId || !month) return;
     setImportLoading(true);
@@ -466,6 +476,7 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
     setSaving(true);
     const payload = {
       client_id: clientId, month, year, status,
+      website_id: websiteId || null,
       keywords: keywords.filter(k => k.keyword).map(k => ({
         keyword: k.keyword, prev_ranking: num(k.prev_ranking),
         curr_ranking: num(k.curr_ranking), search_volume: num(k.search_volume), url: k.url || null,
@@ -718,7 +729,17 @@ export default function ReportForm({ reportId, initialClientId, initial }: Props
                 {auditLoading ? "Auditing..." : "Live Audit"}
               </button>
             </div>
-            {clientId && (
+            {clientId && websites.length > 0 && (
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Website <span className="text-slate-400">(optional — for multi-site clients)</span></label>
+                <select value={websiteId} onChange={e => setWebsiteId(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                  <option value="">-- All / No specific website --</option>
+                  {websites.map(w => <option key={w.id} value={w.id}>{w.name || w.url}</option>)}
+                </select>
+              </div>
+            )}
+            {clientId && websites.length === 0 && (
               <p className="text-[10px] text-slate-400 mt-1 font-medium">
                 Website: {clients.find(c => c.id === clientId)?.website || "Not set"}
               </p>
