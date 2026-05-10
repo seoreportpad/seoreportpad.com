@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, FileText, StickyNote, BookOpen,
   Settings, ClipboardCheck, ChevronRight, X, Menu,
   CalendarDays, TrendingUp, Link2, Target, LogOut, Zap, Briefcase, Layers, Wrench, Network, Sparkles, Building2, DollarSign,
-  Image as ImageIcon, MapPin, ListChecks, CheckSquare, BarChart3, Globe, Receipt, UserCheck, CalendarRange
+  Image as ImageIcon, MapPin, ListChecks, CheckSquare, BarChart3, Globe, Receipt, UserCheck, CalendarRange, Search
 } from "lucide-react";
 
 const nav = [
@@ -33,6 +33,7 @@ const nav = [
   { href: "/dashboard/bulk-reports", label: "Bulk Reports", icon: Layers },
   { href: "/dashboard/auto-reports", label: "Auto Reports", icon: Zap },
   { href: "/dashboard/tools", label: "SEO Tools", icon: Wrench },
+  { href: "/dashboard/tools/gsc", label: "Search Console", icon: Search },
   { href: "/dashboard/tools/pagespeed", label: "PageSpeed", icon: Zap },
   { href: "/dashboard/tools/image-seo", label: "Image SEO", icon: ImageIcon },
   { href: "/dashboard/tools/gap-analysis", label: "Gap Analysis", icon: Target },
