@@ -33,6 +33,7 @@ const nav = [
   { href: "/dashboard/bulk-reports", label: "Bulk Reports", icon: Layers },
   { href: "/dashboard/auto-reports", label: "Auto Reports", icon: Zap },
   { href: "/dashboard/tools", label: "SEO Tools", icon: Wrench },
+  { href: "/dashboard/tools/pagespeed", label: "PageSpeed", icon: Zap },
   { href: "/dashboard/tools/image-seo", label: "Image SEO", icon: ImageIcon },
   { href: "/dashboard/tools/gap-analysis", label: "Gap Analysis", icon: Target },
   { href: "/dashboard/tools/gmb", label: "GMB Optimizer", icon: MapPin },
