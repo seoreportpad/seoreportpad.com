@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     if (!auth.user) return auth.refreshedResponse!;
     const sb = createServiceClient();
     const { autoRoadmap, ...body } = await req.json();
+    if (body.monthly_retainer === "" || body.monthly_retainer === undefined) body.monthly_retainer = null;
     const { data: client, error } = await sb.from("clients").insert({ ...body, user_id: auth.user.id }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (autoRoadmap) {
