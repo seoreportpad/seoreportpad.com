@@ -92,8 +92,15 @@ interface BlogItem {
   status: "Planned" | "Writing" | "Published";
   url?: string;
 }
+interface GmbPost {
+  title: string;
+  type: "Update" | "Offer" | "Event" | "Product";
+  status: "Draft" | "Sent to Client" | "Published";
+  notes?: string;
+}
 interface ContentStrategy {
   blogs: BlogItem[];
+  gmb_posts?: GmbPost[];
   focus_topics?: string;
   content_score?: string;
   notes?: string;
@@ -2229,10 +2236,39 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
               </div>
 
               <div className="space-y-6">
+
+                {/* GMB Posts */}
+                {cs.gmb_posts && cs.gmb_posts.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <MessageCircle size={14} className="text-emerald-500" /> GMB Posts This Month
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {cs.gmb_posts.map((post, i) => (
+                        <div key={i} className="bg-emerald-50/40 border border-emerald-100 rounded-2xl p-4">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <h3 className="font-bold text-slate-800 text-sm leading-tight flex-1">{post.title}</h3>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className={`text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-full whitespace-nowrap ${
+                                post.status === "Published" ? "bg-emerald-100 text-emerald-700" :
+                                post.status === "Sent to Client" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+                              }`}>{post.status}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{post.type}</span>
+                            </div>
+                          </div>
+                          {post.notes && (
+                            <p className="text-[11px] text-slate-500 italic">{post.notes}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {cs.blogs && cs.blogs.length > 0 && (
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <Layers size={14} className="text-blue-500" /> Published & Planned Content
+                      <Layers size={14} className="text-blue-500" /> Blog Titles This Month
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {cs.blogs.map((blog, i) => (

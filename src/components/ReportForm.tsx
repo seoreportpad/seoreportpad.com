@@ -128,8 +128,16 @@ interface BlogItem {
   url?: string;
 }
 
+interface GmbPost {
+  title: string;
+  type: "Update" | "Offer" | "Event" | "Product";
+  status: "Draft" | "Sent to Client" | "Published";
+  notes?: string;
+}
+
 interface ContentStrategy {
   blogs: BlogItem[];
+  gmb_posts: GmbPost[];
   focus_topics: string;
   content_score: string;
   notes: string;
@@ -210,6 +218,7 @@ const defaultTechnicalSEO: TechnicalSEO = {
 
 const defaultContentStrategy: ContentStrategy = {
   blogs: [{ title: "", target_keyword: "", status: "Planned", url: "" }],
+  gmb_posts: [],
   focus_topics: "",
   content_score: "",
   notes: "",
@@ -313,6 +322,7 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     ...defaultContentStrategy,
     ...initial?.content_strategy,
     blogs: initial?.content_strategy?.blogs ?? defaultContentStrategy.blogs,
+    gmb_posts: initial?.content_strategy?.gmb_posts ?? defaultContentStrategy.gmb_posts,
   });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work" | "screenshots">("info");
@@ -1385,15 +1395,84 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
       {/* ── Content & Blogs ── */}
       {activeTab === "content" && (
         <div className="space-y-5">
+
+          {/* GMB Posts */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-700">Content Strategy & Blogs</h2>
-              <button type="button" onClick={() => setContentStrategy(s => ({ ...s, blogs: [...s.blogs, { title: "", target_keyword: "", status: "Planned", url: "" }] }))} 
+              <div>
+                <h2 className="font-semibold text-slate-700">GMB Posts This Month</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Posts sent to client or published on Google Business Profile</p>
+              </div>
+              <button type="button" onClick={() => setContentStrategy(s => ({ ...s, gmb_posts: [...(s.gmb_posts ?? []), { title: "", type: "Update", status: "Draft", notes: "" }] }))}
+                className="flex items-center gap-1.5 text-sm text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 font-medium transition-colors">
+                <Plus size={14} /> Add GMB Post
+              </button>
+            </div>
+            <div className="space-y-3">
+              {(contentStrategy.gmb_posts ?? []).map((post, i) => (
+                <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 relative group">
+                  <button type="button" onClick={() => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).filter((_, idx) => idx !== i) }))}
+                    className="absolute -top-2 -right-2 bg-white border border-slate-200 p-1 rounded-full text-slate-300 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+                    <Trash2 size={12} />
+                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Post Title / Topic</label>
+                      <input value={post.title} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, title: e.target.value } : p) }))}
+                        placeholder="e.g. Summer Sale — 20% Off All Services"
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Post Type</label>
+                      <select value={post.type} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, type: e.target.value as GmbPost["type"] } : p) }))}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="Update">Update</option>
+                        <option value="Offer">Offer</option>
+                        <option value="Event">Event</option>
+                        <option value="Product">Product</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                      <select value={post.status} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, status: e.target.value as GmbPost["status"] } : p) }))}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="Draft">Draft</option>
+                        <option value="Sent to Client">Sent to Client</option>
+                        <option value="Published">Published</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Notes (optional)</label>
+                      <input value={post.notes ?? ""} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, notes: e.target.value } : p) }))}
+                        placeholder="e.g. Client approved, posted on 5th"
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(contentStrategy.gmb_posts ?? []).length === 0 && (
+                <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl">
+                  <p className="text-sm text-slate-400">No GMB posts added yet</p>
+                  <p className="text-xs text-slate-300 mt-1">Add posts you sent to the client or published this month</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Blog Titles */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-slate-700">Blog Titles This Month</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Blog post titles suggested, written, or published</p>
+              </div>
+              <button type="button" onClick={() => setContentStrategy(s => ({ ...s, blogs: [...s.blogs, { title: "", target_keyword: "", status: "Planned", url: "" }] }))}
                 className="flex items-center gap-1.5 text-sm text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 font-medium transition-colors">
                 <Plus size={14} /> Add Blog Title
               </button>
             </div>
-            
             <div className="space-y-3">
               {contentStrategy.blogs.map((blog, i) => (
                 <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 relative group">
@@ -1408,7 +1487,7 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                      <select value={blog.status} onChange={e => setContentStrategy(s => ({ ...s, blogs: s.blogs.map((b, idx) => idx === i ? { ...b, status: e.target.value as any } : b) }))}
+                      <select value={blog.status} onChange={e => setContentStrategy(s => ({ ...s, blogs: s.blogs.map((b, idx) => idx === i ? { ...b, status: e.target.value as BlogItem["status"] } : b) }))}
                         className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="Planned">Planned</option>
                         <option value="Writing">Writing</option>
@@ -1421,7 +1500,7 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
               ))}
               {contentStrategy.blogs.length === 0 && (
                 <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl">
-                  <p className="text-sm text-slate-400">No blog titles added yet.</p>
+                  <p className="text-sm text-slate-400">No blog titles added yet</p>
                 </div>
               )}
             </div>
