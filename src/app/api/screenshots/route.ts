@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   try {
     const body = await req.json();
-    const { report_id, label, url } = body;
+    const { report_id, label, url, type } = body;
     const { data, error } = await createServiceClient()
       .from("screenshots")
-      .insert({ report_id, label, url })
+      .insert({ report_id, label, url, type: type ?? "general" })
       .select()
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

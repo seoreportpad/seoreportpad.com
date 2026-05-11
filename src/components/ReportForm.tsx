@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2, ListPlus, TrendingUp, Activity } from "lucide-react";
+import ReportScreenshots from "@/components/ReportScreenshots";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const WORK_CATEGORIES = ["On-Page SEO","Technical SEO","Link Building","Content","Local SEO","Reporting","Other"];
@@ -314,7 +315,7 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     blogs: initial?.content_strategy?.blogs ?? defaultContentStrategy.blogs,
   });
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work" | "screenshots">("info");
   const [showImport, setShowImport] = useState(false);
   const [importLogs, setImportLogs] = useState<{ id: string; log_date: string; category: string; task: string }[]>([]);
   const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
@@ -669,6 +670,7 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     { id: "content", label: "Content & Blogs" },
     { id: "keywords", label: `Keywords (${keywords.length})` },
     { id: "work", label: `Work Done (${workDone.length})` },
+    { id: "screenshots", label: "Screenshots" },
   ] as const;
 
   const inp = (label: string, value: string, onChange: (v: string) => void, type = "text", placeholder = "") => (
@@ -1557,6 +1559,20 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
               <p className="text-xs text-slate-400 text-center py-4">No tasks yet — add manually or import from Daily Log</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Screenshots ── */}
+      {activeTab === "screenshots" && (
+        <div>
+          {reportId ? (
+            <ReportScreenshots reportId={reportId} />
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center text-slate-400">
+              <p className="font-medium text-slate-500 mb-1">Save the report first</p>
+              <p className="text-sm">Screenshots can be added after the report is created and saved.</p>
+            </div>
+          )}
         </div>
       )}
 
