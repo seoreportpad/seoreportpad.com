@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getUserClient } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { createServiceClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
 
     const { topic, keyword } = await req.json();
     if (!topic || !keyword) return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
 
-    const { data: agency } = await sb.from("agency_settings").select("gemini_api_key").eq("user_id", user.id).single();
+    const sb = createServiceClient();
+    const { data: agency } = await sb.from("agency_settings").select("gemini_api_key").eq("user_id", auth.user.id).maybeSingle();
     const apiKey = agency?.gemini_api_key || process.env.GEMINI_API_KEY;
 
     if (!apiKey) return NextResponse.json({ error: "Gemini API key not configured" }, { status: 400 });

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getUserClient } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
 
     const { topic, type } = await req.json();
     if (!topic) return NextResponse.json({ error: "Topic is required" }, { status: 400 });
@@ -17,7 +16,7 @@ export async function POST(req: NextRequest) {
     const prompt = `Create a high-converting Google Business Profile (GMB) post.
     Post Type: ${type}
     Topic/Goal: ${topic}
-    
+
     Guidelines:
     1. Include a strong hook.
     2. Use local SEO keywords naturally.
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
     4. Keep it engaging and professional.
     5. Use relevant emojis.
     6. Max 1500 characters.
-    
+
     Return as JSON: { "post": "..." }`;
 
     const result = await model.generateContent(prompt);

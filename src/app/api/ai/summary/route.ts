@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserClient } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { createServiceClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    const sb = getUserClient(req);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await getAuthenticatedUser(req);
+    if (!auth.user) return auth.refreshedResponse!;
+    const sb = createServiceClient();
 
     const { reportId } = await req.json();
     if (!reportId) return NextResponse.json({ error: "reportId required" }, { status: 400 });
 
-    // Fetch agency settings for API key
-    const { data: agency } = await sb.from("agency_settings").select("gemini_api_key").eq("user_id", user.id).maybeSingle();
+    const { data: agency } = await sb.from("agency_settings").select("gemini_api_key").eq("user_id", auth.user.id).maybeSingle();
     const apiKey = agency?.gemini_api_key || process.env.GEMINI_API_KEY;
 
     if (!apiKey) return NextResponse.json({ error: "AI not configured. Please add Gemini API Key in Settings." }, { status: 503 });
@@ -61,7 +61,7 @@ Paragraph 3: Forward-looking — what to focus on next month.
 Use confident, positive language. Be specific with numbers. Do NOT use headers or bullet points. Output ONLY the summary text.`;
 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    
+
     const response = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
