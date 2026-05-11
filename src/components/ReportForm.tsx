@@ -144,6 +144,12 @@ interface ContentStrategy {
   notes: string;
 }
 
+interface CsvSheet {
+  name: string;
+  headers: string[];
+  rows: string[][];
+}
+
 interface Client { id: string; name: string; website?: string; }
 
 interface Props {
@@ -158,6 +164,7 @@ interface Props {
     schema_seo?: Partial<SchemaSEO>;
     technical_seo?: Partial<TechnicalSEO>;
     content_strategy?: Partial<ContentStrategy>;
+    csv_sheets?: CsvSheet[];
   };
 }
 
@@ -387,6 +394,188 @@ function GmbPostCard({ post, index, onChange, onRemove }: {
   );
 }
 
+function parseCSV(text: string): { headers: string[]; rows: string[][] } {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length === 0) return { headers: [], rows: [] };
+  const parse = (line: string): string[] => {
+    const cols: string[] = [];
+    let cur = "";
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === "," && !inQ) { cols.push(cur.trim()); cur = ""; continue; }
+      cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  };
+  const headers = parse(lines[0]);
+  const rows = lines.slice(1).map(parse);
+  return { headers, rows };
+}
+
+function CsvSheetsTab({ sheets, onChange }: { sheets: CsvSheet[]; onChange: (s: CsvSheet[]) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [parsing, setParsing] = useState(false);
+  const [activeSheet, setActiveSheet] = useState(0);
+  const [editName, setEditName] = useState<number | null>(null);
+  const [sortCol, setSortCol] = useState<number | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [search, setSearch] = useState("");
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setParsing(true);
+    const newSheets: CsvSheet[] = [];
+    let done = 0;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const text = ev.target?.result as string;
+        const { headers, rows } = parseCSV(text);
+        newSheets.push({ name: file.name.replace(/\.csv$/i, ""), headers, rows });
+        done++;
+        if (done === files.length) {
+          onChange([...sheets, ...newSheets]);
+          setActiveSheet(sheets.length);
+          setParsing(false);
+          if (fileRef.current) fileRef.current.value = "";
+        }
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  const removeSheet = (i: number) => {
+    onChange(sheets.filter((_, idx) => idx !== i));
+    setActiveSheet(Math.max(0, i - 1));
+  };
+
+  const sheet = sheets[activeSheet];
+
+  const sorted = sheet ? [...sheet.rows].sort((a, b) => {
+    if (sortCol === null) return 0;
+    const av = a[sortCol] ?? "";
+    const bv = b[sortCol] ?? "";
+    const n = (v: string) => parseFloat(v.replace(/[^0-9.-]/g, ""));
+    const an = n(av); const bn = n(bv);
+    const cmp = (!isNaN(an) && !isNaN(bn)) ? an - bn : av.localeCompare(bv);
+    return sortDir === "asc" ? cmp : -cmp;
+  }) : [];
+
+  const filtered = search ? sorted.filter(row => row.some(c => c.toLowerCase().includes(search.toLowerCase()))) : sorted;
+
+  const toggleSort = (i: number) => {
+    if (sortCol === i) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(i); setSortDir("asc"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Upload bar */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="font-semibold text-slate-700">Data Sheets</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Upload CSV exports — GSC, Ahrefs, Semrush, any spreadsheet</p>
+          </div>
+          <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-colors ${parsing ? "bg-slate-100 text-slate-400" : "bg-blue-600 hover:bg-blue-700 text-white"}`}>
+            {parsing ? <><Loader2 size={14} className="animate-spin" /> Parsing…</> : <><Plus size={14} /> Upload CSV</>}
+            <input ref={fileRef} type="file" accept=".csv,text/csv" multiple className="hidden" onChange={handleFiles} disabled={parsing} />
+          </label>
+        </div>
+
+        {sheets.length === 0 ? (
+          <label className="flex flex-col items-center gap-3 py-10 border-2 border-dashed border-slate-200 hover:border-blue-300 rounded-2xl cursor-pointer transition-colors">
+            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
+              <Plus size={22} className="text-blue-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-slate-600">Click to upload CSV files</p>
+              <p className="text-xs text-slate-400 mt-1">GSC Performance · Ahrefs Keywords · Backlinks · Any export</p>
+            </div>
+            <input type="file" accept=".csv,text/csv" multiple className="hidden" onChange={handleFiles} />
+          </label>
+        ) : (
+          /* Sheet tabs */
+          <div className="flex flex-wrap gap-2">
+            {sheets.map((s, i) => (
+              <div key={i} className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium cursor-pointer transition-colors ${activeSheet === i ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"}`}
+                onClick={() => { setActiveSheet(i); setSearch(""); setSortCol(null); }}>
+                {editName === i ? (
+                  <input
+                    autoFocus
+                    value={s.name}
+                    onChange={e => onChange(sheets.map((sh, idx) => idx === i ? { ...sh, name: e.target.value } : sh))}
+                    onBlur={() => setEditName(null)}
+                    onKeyDown={e => e.key === "Enter" && setEditName(null)}
+                    onClick={e => e.stopPropagation()}
+                    className="bg-transparent outline-none w-24 text-sm"
+                  />
+                ) : (
+                  <span onDoubleClick={e => { e.stopPropagation(); setEditName(i); }}>{s.name}</span>
+                )}
+                <span className={`text-xs ${activeSheet === i ? "text-blue-200" : "text-slate-400"}`}>{s.rows.length}r</span>
+                <button type="button" onClick={e => { e.stopPropagation(); removeSheet(i); }}
+                  className={`opacity-0 group-hover:opacity-100 p-0.5 rounded transition-all ${activeSheet === i ? "hover:bg-blue-500 text-blue-100" : "hover:bg-red-50 text-slate-400 hover:text-red-500"}`}>
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sheet preview */}
+      {sheet && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+            <p className="text-sm font-semibold text-slate-700 flex-1">{sheet.name} <span className="text-slate-400 font-normal">— {sheet.rows.length} rows × {sheet.headers.length} cols</span></p>
+            <div className="relative">
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search…"
+                className="pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
+              <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+            {search && <span className="text-xs text-slate-400">{filtered.length} results</span>}
+          </div>
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 sticky top-0 z-10">
+                <tr>
+                  {sheet.headers.map((h, i) => (
+                    <th key={i} onClick={() => toggleSort(i)}
+                      className="px-3 py-2.5 text-left font-semibold text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100 border-b border-slate-100 select-none">
+                      <span className="flex items-center gap-1">
+                        {h}
+                        {sortCol === i ? (sortDir === "asc" ? " ↑" : " ↓") : <span className="text-slate-300">↕</span>}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.slice(0, 200).map((row, ri) => (
+                  <tr key={ri} className="hover:bg-slate-50/60 transition-colors">
+                    {sheet.headers.map((_, ci) => (
+                      <td key={ci} className="px-3 py-2 text-slate-600 whitespace-nowrap max-w-xs truncate">{row[ci] ?? ""}</td>
+                    ))}
+                  </tr>
+                ))}
+                {filtered.length > 200 && (
+                  <tr><td colSpan={sheet.headers.length} className="px-3 py-2 text-center text-slate-400 text-xs">Showing 200 of {filtered.length} rows</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const WORK_CAT_COLOR: Record<string, string> = {
   "On-Page SEO":   "bg-blue-100 text-blue-700 border-blue-200",
   "Technical SEO": "bg-violet-100 text-violet-700 border-violet-200",
@@ -553,8 +742,9 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     blogs: initial?.content_strategy?.blogs ?? defaultContentStrategy.blogs,
     gmb_posts: initial?.content_strategy?.gmb_posts ?? defaultContentStrategy.gmb_posts,
   });
+  const [csvSheets, setCsvSheets] = useState<CsvSheet[]>(initial?.csv_sheets ?? []);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work" | "screenshots">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work" | "screenshots" | "sheets">("info");
   const [showImport, setShowImport] = useState(false);
   const [importLogs, setImportLogs] = useState<{ id: string; log_date: string; category: string; task: string }[]>([]);
   const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
@@ -887,10 +1077,12 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
       },
       content_strategy: {
         blogs: contentStrategy.blogs.filter(b => b.title),
+        gmb_posts: contentStrategy.gmb_posts ?? [],
         focus_topics: contentStrategy.focus_topics || null,
         content_score: num(contentStrategy.content_score),
         notes: contentStrategy.notes || null,
       },
+      csv_sheets: csvSheets,
     };
     const url = reportId ? `/api/reports/${reportId}` : "/api/reports";
     const method = reportId ? "PUT" : "POST";
@@ -910,6 +1102,7 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     { id: "keywords", label: `Keywords (${keywords.length})` },
     { id: "work", label: `Work Done (${workDone.length})` },
     { id: "screenshots", label: "Screenshots" },
+    { id: "sheets", label: `Data Sheets${csvSheets.length ? ` (${csvSheets.length})` : ""}` },
   ] as const;
 
   const inp = (label: string, value: string, onChange: (v: string) => void, type = "text", placeholder = "") => (
@@ -1837,6 +2030,11 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Data Sheets ── */}
+      {activeTab === "sheets" && (
+        <CsvSheetsTab sheets={csvSheets} onChange={setCsvSheets} />
       )}
 
       {/* Import Modal */}
