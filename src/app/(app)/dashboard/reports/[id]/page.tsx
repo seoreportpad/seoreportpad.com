@@ -378,6 +378,8 @@ export default function ReportViewPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
+    if (!id) return;
+
     fetch(`/api/reports/${id}`)
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null)
