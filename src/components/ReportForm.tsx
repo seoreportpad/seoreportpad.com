@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2, ListPlus, TrendingUp, Activity } from "lucide-react";
+import { Plus, Trash2, Download, CheckSquare, Square, Sparkles, Loader2, ListPlus, TrendingUp, Activity, ImagePlus, X, ZoomIn } from "lucide-react";
 import ReportScreenshots from "@/components/ReportScreenshots";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -133,6 +133,7 @@ interface GmbPost {
   type: "Update" | "Offer" | "Event" | "Product";
   status: "Draft" | "Sent to Client" | "Published";
   notes?: string;
+  image_url?: string;
 }
 
 interface ContentStrategy {
@@ -261,6 +262,128 @@ function AISummaryButton({ reportId, onGenerated }: { reportId: string; onGenera
       {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
       {loading ? "Generating…" : "AI Summary"}
     </button>
+  );
+}
+
+function GmbPostCard({ post, index, onChange, onRemove }: {
+  post: GmbPost;
+  index: number;
+  onChange: (updated: GmbPost) => void;
+  onRemove: () => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [lightbox, setLightbox] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      onChange({ ...post, image_url: ev.target?.result as string });
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 relative group">
+      <button type="button" onClick={onRemove}
+        className="absolute -top-2 -right-2 bg-white border border-slate-200 p-1 rounded-full text-slate-300 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+        <Trash2 size={12} />
+      </button>
+
+      <div className="flex gap-4">
+        {/* Image column */}
+        <div className="shrink-0 w-28">
+          {post.image_url ? (
+            <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-28 w-28">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={post.image_url} alt="GMB post" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-all flex items-center justify-center gap-1.5 opacity-0 hover:opacity-100">
+                <button type="button" onClick={() => setLightbox(true)}
+                  className="bg-white text-slate-700 p-1.5 rounded-full shadow text-xs">
+                  <ZoomIn size={12} />
+                </button>
+                <button type="button" onClick={() => { onChange({ ...post, image_url: undefined }); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="bg-white text-red-500 p-1.5 rounded-full shadow text-xs">
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center gap-1.5 cursor-pointer h-28 w-28 rounded-xl border-2 border-dashed border-emerald-200 hover:border-emerald-400 bg-emerald-50/40 transition-colors">
+              {uploading ? (
+                <Loader2 size={18} className="text-emerald-400 animate-spin" />
+              ) : (
+                <>
+                  <ImagePlus size={18} className="text-emerald-400" />
+                  <span className="text-[10px] text-emerald-500 font-medium text-center leading-tight">Add<br/>Image</span>
+                </>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} disabled={uploading} />
+            </label>
+          )}
+        </div>
+
+        {/* Fields column */}
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-slate-600 mb-1">Post Title / Topic</label>
+              <input value={post.title} onChange={e => onChange({ ...post, title: e.target.value })}
+                placeholder="e.g. Summer Sale — 20% Off All Services"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Post Type</label>
+              <select value={post.type} onChange={e => onChange({ ...post, type: e.target.value as GmbPost["type"] })}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                <option value="Update">Update</option>
+                <option value="Offer">Offer</option>
+                <option value="Event">Event</option>
+                <option value="Product">Product</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+              <select value={post.status} onChange={e => onChange({ ...post, status: e.target.value as GmbPost["status"] })}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                <option value="Draft">Draft</option>
+                <option value="Sent to Client">Sent to Client</option>
+                <option value="Published">Published</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Notes (optional)</label>
+              <input value={post.notes ?? ""} onChange={e => onChange({ ...post, notes: e.target.value })}
+                placeholder="e.g. Client approved, posted on 5th"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && post.image_url && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setLightbox(false)}>
+          <div className="relative max-w-3xl max-h-full" onClick={e => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={post.image_url} alt={post.title} className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+            <div className="mt-3 text-center">
+              <span className="text-white text-sm font-medium">{post.title}</span>
+            </div>
+            <button onClick={() => setLightbox(false)}
+              className="absolute -top-4 -right-4 bg-white text-slate-700 rounded-full p-2 shadow-lg hover:bg-slate-100 transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1410,47 +1533,13 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
             </div>
             <div className="space-y-3">
               {(contentStrategy.gmb_posts ?? []).map((post, i) => (
-                <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 relative group">
-                  <button type="button" onClick={() => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).filter((_, idx) => idx !== i) }))}
-                    className="absolute -top-2 -right-2 bg-white border border-slate-200 p-1 rounded-full text-slate-300 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
-                    <Trash2 size={12} />
-                  </button>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Post Title / Topic</label>
-                      <input value={post.title} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, title: e.target.value } : p) }))}
-                        placeholder="e.g. Summer Sale — 20% Off All Services"
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Post Type</label>
-                      <select value={post.type} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, type: e.target.value as GmbPost["type"] } : p) }))}
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                        <option value="Update">Update</option>
-                        <option value="Offer">Offer</option>
-                        <option value="Event">Event</option>
-                        <option value="Product">Product</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                      <select value={post.status} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, status: e.target.value as GmbPost["status"] } : p) }))}
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                        <option value="Draft">Draft</option>
-                        <option value="Sent to Client">Sent to Client</option>
-                        <option value="Published">Published</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Notes (optional)</label>
-                      <input value={post.notes ?? ""} onChange={e => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? { ...p, notes: e.target.value } : p) }))}
-                        placeholder="e.g. Client approved, posted on 5th"
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                    </div>
-                  </div>
-                </div>
+                <GmbPostCard
+                  key={i}
+                  post={post}
+                  index={i}
+                  onChange={(updated) => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).map((p, idx) => idx === i ? updated : p) }))}
+                  onRemove={() => setContentStrategy(s => ({ ...s, gmb_posts: (s.gmb_posts ?? []).filter((_, idx) => idx !== i) }))}
+                />
               ))}
               {(contentStrategy.gmb_posts ?? []).length === 0 && (
                 <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl">
