@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         { client_id: client.id, user_id: auth.user.id, task: "Optimize Homepage Meta Tags & H1", status: "todo", category: "On-Page" },
         { client_id: client.id, user_id: auth.user.id, task: "Google Business Profile Optimization", status: "todo", category: "Local SEO" },
       ];
-      await sb.from("client_tasks").insert(tasks);
+      try { await sb.from("client_tasks").insert(tasks); } catch { /* table may not exist */ }
     }
     return NextResponse.json(client);
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
