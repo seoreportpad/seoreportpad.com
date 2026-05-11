@@ -150,6 +150,260 @@ interface CsvSheet {
   rows: string[][];
 }
 
+interface SocialSignals {
+  // Facebook
+  fb_page_likes: string; fb_page_followers: string; fb_posts_this_month: string;
+  fb_total_reach: string; fb_total_engagement: string; fb_shares: string; fb_page_url: string;
+  // Instagram
+  ig_followers: string; ig_posts_this_month: string; ig_impressions: string;
+  ig_reach: string; ig_engagement: string; ig_profile_visits: string; ig_url: string;
+  // Twitter/X
+  tw_followers: string; tw_tweets_this_month: string; tw_impressions: string;
+  tw_mentions: string; tw_retweets: string; tw_url: string;
+  // LinkedIn
+  li_followers: string; li_posts_this_month: string; li_impressions: string;
+  li_engagements: string; li_url: string;
+  // Pinterest
+  pt_monthly_viewers: string; pt_pins_created: string; pt_saves: string; pt_url: string;
+  // YouTube
+  yt_subscribers: string; yt_views_this_month: string; yt_videos_published: string; yt_url: string;
+  // Overall
+  total_social_traffic: string; brand_mentions: string; notes: string;
+}
+
+interface PressRelease {
+  items: {
+    id: string;
+    title: string;
+    url: string;
+    published_date: string;
+    distribution: string;
+    status: "Draft" | "Published" | "Picked Up";
+    pickups: string;
+    da: string;
+    notes: string;
+  }[];
+  total_distribution: string;
+  total_backlinks_earned: string;
+  notes: string;
+}
+
+interface VideoSEO {
+  platform: string;
+  channel_url: string;
+  videos_published: string;
+  total_views: string; new_views: string;
+  subscribers: string; new_subscribers: string;
+  watch_time_hours: string;
+  avg_view_duration: string;
+  top_video_title: string; top_video_views: string; top_video_url: string;
+  videos_optimized: string;
+  titles_with_keyword: string;
+  descriptions_optimized: string;
+  tags_added: string;
+  thumbnails_updated: string;
+  cards_added: string;
+  end_screens_added: string;
+  playlists_created: string;
+  video_schema_added: boolean;
+  youtube_search_traffic: string;
+  impressions: string; ctr: string;
+  notes: string;
+}
+
+interface EcommerceSEO {
+  platform: string;
+  total_products: string;
+  products_optimized: string;
+  products_with_schema: string;
+  category_pages_optimized: string;
+  out_of_stock_handled: string;
+  canonical_set: boolean;
+  faceted_nav_ok: boolean;
+  product_reviews_enabled: boolean;
+  rich_snippets_eligible: boolean;
+  // Performance
+  organic_revenue: string; prev_organic_revenue: string;
+  organic_transactions: string; prev_organic_transactions: string;
+  organic_conversion_rate: string;
+  cart_abandonment_rate: string;
+  top_selling_organic_product: string;
+  // Issues
+  duplicate_product_pages: string;
+  thin_product_descriptions: string;
+  missing_product_images: string;
+  broken_product_links: string;
+  notes: string;
+}
+
+interface AiGeoSEO {
+  // AI Visibility
+  chatgpt_mentions: string; perplexity_mentions: string; gemini_mentions: string;
+  bing_copilot_mentions: string; ai_overview_appearances: string;
+  brand_in_ai_answers: boolean; competitor_in_ai_answers: boolean;
+  // Featured Snippets & PAA
+  featured_snippets_owned: string; featured_snippets_lost: string; featured_snippets_gained: string;
+  paa_boxes_owned: string; knowledge_panel_exists: boolean; knowledge_panel_updated: boolean;
+  // GEO Optimization work done
+  structured_data_for_ai: boolean; faq_schema_added: boolean; speakable_schema: boolean;
+  content_q_and_a_format: boolean; conversational_content_added: boolean;
+  cited_by_ai_sources: string; ai_citation_urls: string;
+  // AI Search Traffic
+  ai_referral_traffic: string; zero_click_searches: string; ai_traffic_trend: string;
+  // SGE / AI Overviews
+  sge_impressions: string; sge_clicks: string; sge_ctr: string;
+  // Scores
+  geo_score: string; ai_visibility_score: string; notes: string;
+}
+
+interface NlpSEO {
+  // Entity Optimization
+  primary_entity: string; secondary_entities: string; entity_type: string;
+  entity_in_title: boolean; entity_in_h1: boolean; entity_in_meta: boolean;
+  entities_added_this_month: string; entities_linked_to_kg: boolean;
+  // Content Quality
+  readability_score: string; readability_grade: string; flesch_kincaid: string;
+  avg_sentence_length: string; passive_voice_percent: string;
+  sentiment_score: string; sentiment_label: string;
+  // NLP Keywords
+  nlp_keywords_targeted: string; nlp_keywords_ranking: string;
+  co_occurrence_terms: string; topic_authority_score: string;
+  // EEAT
+  author_bio_added: boolean; expert_quotes_added: boolean;
+  citations_added: string; trust_signals_added: string;
+  fact_checked: boolean; last_updated_shown: boolean;
+  // Structured Data NLP
+  speakable_markup: boolean; faq_markup: boolean; howto_markup: boolean;
+  article_schema: boolean; review_schema: boolean;
+  // Score
+  nlp_score: string; content_depth_score: string; notes: string;
+}
+
+interface SemanticSEO {
+  // Topic Clusters
+  pillar_pages: string; cluster_pages: string; new_pillar_pages: string;
+  new_cluster_pages: string; pillar_pages_list: string;
+  // LSI Keywords
+  lsi_keywords_added: string; lsi_keywords_ranking: string; lsi_keywords_list: string;
+  // Internal Linking
+  internal_links_added: string; orphan_pages_fixed: string; silo_structure_ok: boolean;
+  avg_internal_links_per_page: string; hub_pages_identified: string;
+  // Content Coverage
+  topic_coverage_score: string; content_gaps_identified: string;
+  content_gaps_filled: string; cannibalization_issues: string;
+  cannibalization_fixed: string;
+  // Topical Authority
+  topical_authority_score: string; niche_relevance_score: string;
+  total_pages_on_topic: string; pages_added_this_month: string;
+  // Co-Citation & Co-Occurrence
+  co_citations: string; co_occurrences_targeted: string;
+  related_terms_used: string;
+  // Score
+  semantic_score: string; notes: string;
+}
+
+interface ImageSeoReport {
+  // Inventory
+  total_images: string; images_with_alt: string; images_missing_alt: string;
+  images_missing_alt_fixed: string;
+  // Optimization
+  images_compressed: string; images_converted_to_webp: string;
+  lazy_loading_enabled: boolean; responsive_images: boolean;
+  images_with_title_attr: string;
+  // File Sizes
+  avg_image_size_kb: string; oversized_images: string; oversized_images_fixed: string;
+  // Structured Data
+  images_with_schema: string; product_images_schema: string;
+  article_images_schema: string; logo_schema: boolean;
+  // Google Image Search
+  image_search_impressions: string; image_search_clicks: string; image_search_ctr: string;
+  top_ranking_image: string; top_ranking_image_keyword: string;
+  // CDN & Delivery
+  cdn_serving_images: boolean; next_gen_formats: boolean; image_sitemap_submitted: boolean;
+  // Score
+  image_seo_score: string; issues_fixed: string; notes: string;
+}
+
+interface ActionItem {
+  id: string;
+  task: string;
+  priority: "high" | "medium" | "low";
+  done: boolean;
+}
+
+interface Goal {
+  id: string;
+  goal: string;
+  target: string;
+  achieved: string;
+  status: "achieved" | "partial" | "missed" | "ongoing";
+}
+
+interface TimeEntry {
+  id: string;
+  category: string;
+  hours: string;
+  notes: string;
+}
+
+interface InvoiceItem {
+  desc: string;
+  qty: string;
+  price: string;
+}
+
+interface Invoice {
+  number: string;
+  date: string;
+  due_date: string;
+  currency: string;
+  items: InvoiceItem[];
+  notes: string;
+  paid: boolean;
+}
+
+interface ReviewRequest {
+  id: string;
+  platform: string;
+  link: string;
+  sent: boolean;
+  notes: string;
+}
+
+interface SectionVisibility {
+  executive_summary?: boolean;
+  metrics?: boolean;
+  scores_radar?: boolean;
+  keywords?: boolean;
+  work_done?: boolean;
+  on_page?: boolean;
+  local_seo?: boolean;
+  schema?: boolean;
+  technical?: boolean;
+  content?: boolean;
+  pagespeed?: boolean;
+  goals?: boolean;
+  time_spent?: boolean;
+  invoice?: boolean;
+  review_requests?: boolean;
+  action_items?: boolean;
+  backlinks?: boolean;
+  competitors?: boolean;
+  rank_history?: boolean;
+  daily_logs?: boolean;
+  csv_sheets?: boolean;
+  screenshots?: boolean;
+  recommendations?: boolean;
+  social_signals?: boolean;
+  press_release?: boolean;
+  video_seo?: boolean;
+  ecommerce?: boolean;
+  ai_geo_seo?: boolean;
+  nlp_seo?: boolean;
+  semantic_seo?: boolean;
+  image_seo?: boolean;
+}
+
 interface Client { id: string; name: string; website?: string; }
 
 interface Props {
@@ -165,6 +419,21 @@ interface Props {
     technical_seo?: Partial<TechnicalSEO>;
     content_strategy?: Partial<ContentStrategy>;
     csv_sheets?: CsvSheet[];
+    action_items?: ActionItem[];
+    executive_summary?: string;
+    goals?: Goal[];
+    time_spent?: TimeEntry[];
+    invoice?: Invoice;
+    review_requests?: ReviewRequest[];
+    section_visibility?: SectionVisibility;
+    social_signals?: Partial<SocialSignals>;
+    press_release?: Partial<PressRelease>;
+    video_seo?: Partial<VideoSEO>;
+    ecommerce_seo?: Partial<EcommerceSEO>;
+    ai_geo_seo?: Partial<AiGeoSEO>;
+    nlp_seo?: Partial<NlpSEO>;
+    semantic_seo?: Partial<SemanticSEO>;
+    image_seo_report?: Partial<ImageSeoReport>;
   };
 }
 
@@ -230,6 +499,102 @@ const defaultContentStrategy: ContentStrategy = {
   focus_topics: "",
   content_score: "",
   notes: "",
+};
+
+const defaultSocial: SocialSignals = {
+  fb_page_likes: "", fb_page_followers: "", fb_posts_this_month: "",
+  fb_total_reach: "", fb_total_engagement: "", fb_shares: "", fb_page_url: "",
+  ig_followers: "", ig_posts_this_month: "", ig_impressions: "",
+  ig_reach: "", ig_engagement: "", ig_profile_visits: "", ig_url: "",
+  tw_followers: "", tw_tweets_this_month: "", tw_impressions: "",
+  tw_mentions: "", tw_retweets: "", tw_url: "",
+  li_followers: "", li_posts_this_month: "", li_impressions: "",
+  li_engagements: "", li_url: "",
+  pt_monthly_viewers: "", pt_pins_created: "", pt_saves: "", pt_url: "",
+  yt_subscribers: "", yt_views_this_month: "", yt_videos_published: "", yt_url: "",
+  total_social_traffic: "", brand_mentions: "", notes: "",
+};
+
+const defaultVideoSEO: VideoSEO = {
+  platform: "YouTube", channel_url: "",
+  videos_published: "", total_views: "", new_views: "",
+  subscribers: "", new_subscribers: "", watch_time_hours: "",
+  avg_view_duration: "", top_video_title: "", top_video_views: "", top_video_url: "",
+  videos_optimized: "", titles_with_keyword: "", descriptions_optimized: "",
+  tags_added: "", thumbnails_updated: "", cards_added: "",
+  end_screens_added: "", playlists_created: "",
+  video_schema_added: false,
+  youtube_search_traffic: "", impressions: "", ctr: "", notes: "",
+};
+
+const defaultEcommerce: EcommerceSEO = {
+  platform: "WooCommerce",
+  total_products: "", products_optimized: "", products_with_schema: "",
+  category_pages_optimized: "", out_of_stock_handled: "",
+  canonical_set: false, faceted_nav_ok: false,
+  product_reviews_enabled: false, rich_snippets_eligible: false,
+  organic_revenue: "", prev_organic_revenue: "",
+  organic_transactions: "", prev_organic_transactions: "",
+  organic_conversion_rate: "", cart_abandonment_rate: "",
+  top_selling_organic_product: "",
+  duplicate_product_pages: "", thin_product_descriptions: "",
+  missing_product_images: "", broken_product_links: "", notes: "",
+};
+
+const defaultAiGeo: AiGeoSEO = {
+  chatgpt_mentions: "", perplexity_mentions: "", gemini_mentions: "",
+  bing_copilot_mentions: "", ai_overview_appearances: "",
+  brand_in_ai_answers: false, competitor_in_ai_answers: false,
+  featured_snippets_owned: "", featured_snippets_lost: "", featured_snippets_gained: "",
+  paa_boxes_owned: "", knowledge_panel_exists: false, knowledge_panel_updated: false,
+  structured_data_for_ai: false, faq_schema_added: false, speakable_schema: false,
+  content_q_and_a_format: false, conversational_content_added: false,
+  cited_by_ai_sources: "", ai_citation_urls: "",
+  ai_referral_traffic: "", zero_click_searches: "", ai_traffic_trend: "",
+  sge_impressions: "", sge_clicks: "", sge_ctr: "",
+  geo_score: "", ai_visibility_score: "", notes: "",
+};
+
+const defaultNlp: NlpSEO = {
+  primary_entity: "", secondary_entities: "", entity_type: "",
+  entity_in_title: false, entity_in_h1: false, entity_in_meta: false,
+  entities_added_this_month: "", entities_linked_to_kg: false,
+  readability_score: "", readability_grade: "", flesch_kincaid: "",
+  avg_sentence_length: "", passive_voice_percent: "",
+  sentiment_score: "", sentiment_label: "",
+  nlp_keywords_targeted: "", nlp_keywords_ranking: "",
+  co_occurrence_terms: "", topic_authority_score: "",
+  author_bio_added: false, expert_quotes_added: false,
+  citations_added: "", trust_signals_added: "",
+  fact_checked: false, last_updated_shown: false,
+  speakable_markup: false, faq_markup: false, howto_markup: false,
+  article_schema: false, review_schema: false,
+  nlp_score: "", content_depth_score: "", notes: "",
+};
+
+const defaultSemantic: SemanticSEO = {
+  pillar_pages: "", cluster_pages: "", new_pillar_pages: "", new_cluster_pages: "", pillar_pages_list: "",
+  lsi_keywords_added: "", lsi_keywords_ranking: "", lsi_keywords_list: "",
+  internal_links_added: "", orphan_pages_fixed: "", silo_structure_ok: false,
+  avg_internal_links_per_page: "", hub_pages_identified: "",
+  topic_coverage_score: "", content_gaps_identified: "", content_gaps_filled: "",
+  cannibalization_issues: "", cannibalization_fixed: "",
+  topical_authority_score: "", niche_relevance_score: "",
+  total_pages_on_topic: "", pages_added_this_month: "",
+  co_citations: "", co_occurrences_targeted: "", related_terms_used: "",
+  semantic_score: "", notes: "",
+};
+
+const defaultImageSeo: ImageSeoReport = {
+  total_images: "", images_with_alt: "", images_missing_alt: "", images_missing_alt_fixed: "",
+  images_compressed: "", images_converted_to_webp: "",
+  lazy_loading_enabled: false, responsive_images: false, images_with_title_attr: "",
+  avg_image_size_kb: "", oversized_images: "", oversized_images_fixed: "",
+  images_with_schema: "", product_images_schema: "", article_images_schema: "", logo_schema: false,
+  image_search_impressions: "", image_search_clicks: "", image_search_ctr: "",
+  top_ranking_image: "", top_ranking_image_keyword: "",
+  cdn_serving_images: false, next_gen_formats: false, image_sitemap_submitted: false,
+  image_seo_score: "", issues_fixed: "", notes: "",
 };
 
 const defaultOnPage: OnPageSEO = {
@@ -743,8 +1108,45 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     gmb_posts: initial?.content_strategy?.gmb_posts ?? defaultContentStrategy.gmb_posts,
   });
   const [csvSheets, setCsvSheets] = useState<CsvSheet[]>(initial?.csv_sheets ?? []);
+  const [actionItems, setActionItems] = useState<ActionItem[]>(initial?.action_items ?? []);
+  const [executiveSummary, setExecutiveSummary] = useState(initial?.executive_summary ?? "");
+  const [socialSignals, setSocialSignals] = useState<SocialSignals>({ ...defaultSocial, ...initial?.social_signals });
+  const [pressRelease, setPressRelease] = useState<PressRelease>({
+    items: initial?.press_release?.items ?? [],
+    total_distribution: initial?.press_release?.total_distribution ?? "",
+    total_backlinks_earned: initial?.press_release?.total_backlinks_earned ?? "",
+    notes: initial?.press_release?.notes ?? "",
+  });
+  const [videoSEO, setVideoSEO] = useState<VideoSEO>({ ...defaultVideoSEO, ...initial?.video_seo });
+  const [ecommerceSEO, setEcommerceSEO] = useState<EcommerceSEO>({ ...defaultEcommerce, ...initial?.ecommerce_seo });
+  const [aiGeoSEO, setAiGeoSEO] = useState<AiGeoSEO>({ ...defaultAiGeo, ...initial?.ai_geo_seo });
+  const [nlpSEO, setNlpSEO] = useState<NlpSEO>({ ...defaultNlp, ...initial?.nlp_seo });
+  const [semanticSEO, setSemanticSEO] = useState<SemanticSEO>({ ...defaultSemantic, ...initial?.semantic_seo });
+  const [imageSeoReport, setImageSeoReport] = useState<ImageSeoReport>({ ...defaultImageSeo, ...initial?.image_seo_report });
+  const [goals, setGoals] = useState<Goal[]>(initial?.goals ?? []);
+  const [timeSpent, setTimeSpent] = useState<TimeEntry[]>(initial?.time_spent ?? []);
+  const [invoice, setInvoice] = useState<Invoice>(initial?.invoice ?? {
+    number: `INV-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    date: new Date().toISOString().split("T")[0],
+    due_date: "",
+    currency: "USD",
+    items: [{ desc: "Monthly SEO Services", qty: "1", price: "500" }],
+    notes: "",
+    paid: false,
+  });
+  const [reviewRequests, setReviewRequests] = useState<ReviewRequest[]>(initial?.review_requests ?? []);
+  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>({
+    executive_summary: true, metrics: true, scores_radar: true, keywords: true, work_done: true,
+    on_page: true, local_seo: true, schema: true, technical: true, content: true,
+    pagespeed: true, social_signals: true, press_release: true, video_seo: true, ecommerce: true,
+    ai_geo_seo: true, nlp_seo: true, semantic_seo: true, image_seo: true,
+    goals: true, time_spent: true, invoice: false, review_requests: true,
+    action_items: true, backlinks: true, competitors: true, rank_history: true, daily_logs: true,
+    csv_sheets: true, screenshots: true, recommendations: true,
+    ...initial?.section_visibility,
+  });
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "keywords" | "work" | "screenshots" | "sheets">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "metrics" | "onpage" | "localseo" | "schema" | "technical" | "content" | "social" | "pr" | "video" | "ecom" | "aigeo" | "nlp" | "semantic" | "imageseo" | "keywords" | "work" | "screenshots" | "sheets" | "actions" | "goals" | "time" | "invoice" | "reviews" | "visibility">("info");
   const [showImport, setShowImport] = useState(false);
   const [importLogs, setImportLogs] = useState<{ id: string; log_date: string; category: string; task: string }[]>([]);
   const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
@@ -1083,6 +1485,21 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
         notes: contentStrategy.notes || null,
       },
       csv_sheets: csvSheets,
+      action_items: actionItems,
+      executive_summary: executiveSummary || null,
+      goals,
+      time_spent: timeSpent,
+      invoice,
+      review_requests: reviewRequests,
+      section_visibility: sectionVisibility,
+      social_signals: socialSignals,
+      press_release: pressRelease,
+      video_seo: videoSEO,
+      ecommerce_seo: ecommerceSEO,
+      ai_geo_seo: aiGeoSEO,
+      nlp_seo: nlpSEO,
+      semantic_seo: semanticSEO,
+      image_seo_report: imageSeoReport,
     };
     const url = reportId ? `/api/reports/${reportId}` : "/api/reports";
     const method = reportId ? "PUT" : "POST";
@@ -1101,8 +1518,22 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     { id: "content", label: "Content & Blogs" },
     { id: "keywords", label: `Keywords (${keywords.length})` },
     { id: "work", label: `Work Done (${workDone.length})` },
+    { id: "social", label: "Social Signals" },
+    { id: "pr", label: `Press Release${pressRelease.items.length ? ` (${pressRelease.items.length})` : ""}` },
+    { id: "video", label: "Video SEO" },
+    { id: "ecom", label: "E-commerce SEO" },
+    { id: "aigeo", label: "AI / GEO SEO" },
+    { id: "nlp", label: "NLP SEO" },
+    { id: "semantic", label: "Semantic / LSI" },
+    { id: "imageseo", label: "Image SEO" },
+    { id: "goals", label: `Goals/KPIs${goals.length ? ` (${goals.length})` : ""}` },
+    { id: "time", label: `Time Spent${timeSpent.length ? ` (${timeSpent.length})` : ""}` },
+    { id: "invoice", label: "Invoice" },
+    { id: "reviews", label: `Review Requests${reviewRequests.length ? ` (${reviewRequests.length})` : ""}` },
+    { id: "actions", label: `Action Items${actionItems.length ? ` (${actionItems.length})` : ""}` },
     { id: "screenshots", label: "Screenshots" },
     { id: "sheets", label: `Data Sheets${csvSheets.length ? ` (${csvSheets.length})` : ""}` },
+    { id: "visibility", label: "⚙ Sections" },
   ] as const;
 
   const inp = (label: string, value: string, onChange: (v: string) => void, type = "text", placeholder = "") => (
@@ -1201,6 +1632,12 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
               <option value="ready">Ready to Send</option>
               <option value="sent">Sent</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Executive Summary <span className="text-slate-400 font-normal">(shown at top of report)</span></label>
+            <textarea rows={4} value={executiveSummary} onChange={e => setExecutiveSummary(e.target.value)}
+              placeholder="Brief overview of this month's SEO work, key wins, and what was accomplished for the client..."
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
         </div>
       )}
@@ -2035,6 +2472,1043 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
       {/* ── Data Sheets ── */}
       {activeTab === "sheets" && (
         <CsvSheetsTab sheets={csvSheets} onChange={setCsvSheets} />
+      )}
+
+      {/* ── Action Items ── */}
+      {activeTab === "actions" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-slate-800">Client Action Items</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Tasks the client needs to complete before or alongside SEO work</p>
+              </div>
+              <button type="button" onClick={() => setActionItems(prev => [...prev, { id: crypto.randomUUID(), task: "", priority: "medium", done: false }])}
+                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors">
+                <Plus size={13} /> Add Item
+              </button>
+            </div>
+
+            {actionItems.length === 0 ? (
+              <div className="text-center py-10 text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 opacity-40"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <p className="text-sm text-slate-400 font-medium">No action items yet</p>
+                <p className="text-xs mt-1 text-slate-300">Add tasks the client needs to do</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {actionItems.map((item, idx) => (
+                  <div key={item.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <button type="button" onClick={() => setActionItems(prev => prev.map((ai, i) => i === idx ? { ...ai, done: !ai.done } : ai))}
+                      className={`mt-0.5 shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${item.done ? "bg-green-500 border-green-500" : "bg-white border-slate-300 hover:border-green-400"}`}>
+                      {item.done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <input value={item.task} onChange={e => setActionItems(prev => prev.map((ai, i) => i === idx ? { ...ai, task: e.target.value } : ai))}
+                        placeholder="e.g. Update Google Business Profile with new photos"
+                        className={`w-full bg-transparent text-sm focus:outline-none ${item.done ? "line-through text-slate-400" : "text-slate-700"}`} />
+                    </div>
+                    <select value={item.priority} onChange={e => setActionItems(prev => prev.map((ai, i) => i === idx ? { ...ai, priority: e.target.value as ActionItem["priority"] } : ai))}
+                      className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white shrink-0 focus:outline-none">
+                      <option value="high">🔴 High</option>
+                      <option value="medium">🟡 Medium</option>
+                      <option value="low">🟢 Low</option>
+                    </select>
+                    <button type="button" onClick={() => setActionItems(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-slate-300 hover:text-red-500 transition-colors shrink-0 mt-0.5">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {actionItems.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-4 text-xs text-slate-400">
+                <span>{actionItems.filter(a => a.done).length}/{actionItems.length} completed</span>
+                <span>{actionItems.filter(a => a.priority === "high" && !a.done).length} high priority pending</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Social Signals ── */}
+      {activeTab === "social" && (() => {
+        const ss = (k: keyof SocialSignals, label: string, type = "number") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={socialSignals[k] as string} onChange={e => setSocialSignals(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const platform = (name: string, color: string, fields: React.ReactNode) => (
+          <div className={`rounded-2xl border p-4`} style={{ borderColor: color + "40", background: color + "08" }}>
+            <h4 className="text-sm font-bold mb-3" style={{ color }}>{name}</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{fields}</div>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            {platform("Facebook", "#1877f2", <>
+              {ss("fb_page_likes", "Page Likes")}
+              {ss("fb_page_followers", "Followers")}
+              {ss("fb_posts_this_month", "Posts This Month")}
+              {ss("fb_total_reach", "Total Reach")}
+              {ss("fb_total_engagement", "Total Engagement")}
+              {ss("fb_shares", "Shares")}
+              {ss("fb_page_url", "Page URL", "url")}
+            </>)}
+            {platform("Instagram", "#e1306c", <>
+              {ss("ig_followers", "Followers")}
+              {ss("ig_posts_this_month", "Posts This Month")}
+              {ss("ig_impressions", "Impressions")}
+              {ss("ig_reach", "Reach")}
+              {ss("ig_engagement", "Engagement")}
+              {ss("ig_profile_visits", "Profile Visits")}
+              {ss("ig_url", "Profile URL", "url")}
+            </>)}
+            {platform("Twitter / X", "#000000", <>
+              {ss("tw_followers", "Followers")}
+              {ss("tw_tweets_this_month", "Tweets This Month")}
+              {ss("tw_impressions", "Impressions")}
+              {ss("tw_mentions", "Mentions")}
+              {ss("tw_retweets", "Retweets")}
+              {ss("tw_url", "Profile URL", "url")}
+            </>)}
+            {platform("LinkedIn", "#0a66c2", <>
+              {ss("li_followers", "Followers")}
+              {ss("li_posts_this_month", "Posts This Month")}
+              {ss("li_impressions", "Impressions")}
+              {ss("li_engagements", "Engagements")}
+              {ss("li_url", "Page URL", "url")}
+            </>)}
+            {platform("Pinterest", "#e60023", <>
+              {ss("pt_monthly_viewers", "Monthly Viewers")}
+              {ss("pt_pins_created", "Pins Created")}
+              {ss("pt_saves", "Saves")}
+              {ss("pt_url", "Profile URL", "url")}
+            </>)}
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <h4 className="text-sm font-bold text-slate-700 mb-3">Overall</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {ss("total_social_traffic", "Total Social Traffic")}
+                {ss("brand_mentions", "Brand Mentions")}
+              </div>
+              <div className="mt-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Notes</label>
+                <textarea rows={2} value={socialSignals.notes} onChange={e => setSocialSignals(p => ({ ...p, notes: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Press Release ── */}
+      {activeTab === "pr" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-slate-800">Press Release / PR</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Track press releases published and distributed this month</p>
+              </div>
+              <button type="button" onClick={() => setPressRelease(p => ({ ...p, items: [...p.items, { id: crypto.randomUUID(), title: "", url: "", published_date: "", distribution: "", status: "Draft", pickups: "", da: "", notes: "" }] }))}
+                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-blue-700">
+                <Plus size={13} /> Add PR
+              </button>
+            </div>
+            {pressRelease.items.length === 0 ? (
+              <div className="text-center py-8 text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
+                <p className="text-sm text-slate-400">No press releases yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pressRelease.items.map((pr, i) => (
+                  <div key={pr.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <input value={pr.title} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, title: e.target.value } : x) }))}
+                        placeholder="Press Release Title" className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      <select value={pr.status} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, status: e.target.value as typeof pr.status } : x) }))}
+                        className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none shrink-0">
+                        <option>Draft</option><option>Published</option><option>Picked Up</option>
+                      </select>
+                      <button type="button" onClick={() => setPressRelease(p => ({ ...p, items: p.items.filter((_, j) => j !== i) }))} className="text-slate-300 hover:text-red-500 shrink-0"><Trash2 size={14} /></button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">URL</label>
+                        <input value={pr.url} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, url: e.target.value } : x) }))}
+                          placeholder="https://..." className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Published Date</label>
+                        <input type="date" value={pr.published_date} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, published_date: e.target.value } : x) }))}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Distribution</label>
+                        <input value={pr.distribution} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, distribution: e.target.value } : x) }))}
+                          placeholder="e.g. PRWeb, EIN" className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Pickups / Backlinks</label>
+                        <input type="number" value={pr.pickups} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, pickups: e.target.value } : x) }))}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <input value={pr.notes} onChange={e => setPressRelease(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, notes: e.target.value } : x) }))}
+                        placeholder="Notes..." className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {pressRelease.items.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Total Distribution Sites</label>
+                  <input type="number" value={pressRelease.total_distribution} onChange={e => setPressRelease(p => ({ ...p, total_distribution: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Total Backlinks Earned</label>
+                  <input type="number" value={pressRelease.total_backlinks_earned} onChange={e => setPressRelease(p => ({ ...p, total_backlinks_earned: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Video SEO ── */}
+      {activeTab === "video" && (() => {
+        const vs = (k: keyof VideoSEO, label: string, type = "text") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={videoSEO[k] as string} onChange={e => setVideoSEO(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const vt = (k: keyof VideoSEO, label: string) => (
+          <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <button type="button" onClick={() => setVideoSEO(p => ({ ...p, [k]: !p[k] }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${videoSEO[k] ? "bg-blue-600" : "bg-slate-200"}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${videoSEO[k] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Channel Overview</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Platform</label>
+                  <select value={videoSEO.platform} onChange={e => setVideoSEO(p => ({ ...p, platform: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none bg-white">
+                    <option>YouTube</option><option>Vimeo</option><option>TikTok</option><option>Instagram Reels</option><option>Facebook Video</option>
+                  </select>
+                </div>
+                {vs("channel_url", "Channel URL")}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {vs("subscribers", "Total Subscribers", "number")}
+                {vs("new_subscribers", "New Subscribers", "number")}
+                {vs("videos_published", "Videos Published", "number")}
+                {vs("total_views", "Total Channel Views", "number")}
+                {vs("new_views", "New Views This Month", "number")}
+                {vs("watch_time_hours", "Watch Time (hours)", "number")}
+                {vs("avg_view_duration", "Avg View Duration")}
+                {vs("impressions", "Impressions", "number")}
+                {vs("ctr", "CTR (%)", "number")}
+                {vs("youtube_search_traffic", "Search Traffic %", "number")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Optimization This Month</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                {vs("videos_optimized", "Videos Optimized", "number")}
+                {vs("titles_with_keyword", "Titles with Keyword", "number")}
+                {vs("descriptions_optimized", "Descriptions Optimized", "number")}
+                {vs("tags_added", "Tags Added/Updated", "number")}
+                {vs("thumbnails_updated", "Thumbnails Updated", "number")}
+                {vs("cards_added", "Cards Added", "number")}
+                {vs("end_screens_added", "End Screens Added", "number")}
+                {vs("playlists_created", "Playlists Created", "number")}
+              </div>
+              {vt("video_schema_added", "Video Schema Markup Added")}
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-3">Top Performing Video</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {vs("top_video_title", "Title")}
+                {vs("top_video_views", "Views", "number")}
+                {vs("top_video_url", "URL")}
+              </div>
+              <div className="mt-3">
+                <label className="text-xs font-medium text-slate-600 mb-1 block">Notes</label>
+                <textarea rows={2} value={videoSEO.notes} onChange={e => setVideoSEO(p => ({ ...p, notes: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── E-commerce SEO ── */}
+      {activeTab === "ecom" && (() => {
+        const es = (k: keyof EcommerceSEO, label: string, type = "text") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={ecommerceSEO[k] as string} onChange={e => setEcommerceSEO(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const et = (k: keyof EcommerceSEO, label: string) => (
+          <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <button type="button" onClick={() => setEcommerceSEO(p => ({ ...p, [k]: !p[k] }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${ecommerceSEO[k] ? "bg-blue-600" : "bg-slate-200"}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${ecommerceSEO[k] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div>
+                  <h3 className="font-semibold text-slate-800">E-commerce SEO</h3>
+                </div>
+                <select value={ecommerceSEO.platform} onChange={e => setEcommerceSEO(p => ({ ...p, platform: e.target.value }))}
+                  className="ml-auto border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none bg-white">
+                  <option>WooCommerce</option><option>Shopify</option><option>Magento</option><option>BigCommerce</option><option>Custom</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {es("total_products", "Total Products", "number")}
+                {es("products_optimized", "Products Optimized", "number")}
+                {es("products_with_schema", "Products with Schema", "number")}
+                {es("category_pages_optimized", "Category Pages Optimized", "number")}
+                {es("out_of_stock_handled", "Out-of-Stock Handled", "number")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Organic Revenue</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                {es("organic_revenue", "Organic Revenue (this month)")}
+                {es("prev_organic_revenue", "Organic Revenue (last month)")}
+                {es("organic_transactions", "Organic Transactions", "number")}
+                {es("prev_organic_transactions", "Prev Transactions", "number")}
+                {es("organic_conversion_rate", "Organic Conv. Rate (%)", "number")}
+                {es("cart_abandonment_rate", "Cart Abandonment Rate (%)", "number")}
+                {es("top_selling_organic_product", "Top Selling Product")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Technical Checks</h3>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {et("canonical_set", "Canonical Tags Set")}
+                {et("faceted_nav_ok", "Faceted Navigation OK")}
+                {et("product_reviews_enabled", "Product Reviews Enabled")}
+                {et("rich_snippets_eligible", "Rich Snippets Eligible")}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {es("duplicate_product_pages", "Duplicate Product Pages", "number")}
+                {es("thin_product_descriptions", "Thin Descriptions", "number")}
+                {es("missing_product_images", "Missing Product Images", "number")}
+                {es("broken_product_links", "Broken Product Links", "number")}
+              </div>
+              <div className="mt-3">
+                <label className="text-xs font-medium text-slate-600 mb-1 block">Notes</label>
+                <textarea rows={2} value={ecommerceSEO.notes} onChange={e => setEcommerceSEO(p => ({ ...p, notes: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── AI / GEO SEO ── */}
+      {activeTab === "aigeo" && (() => {
+        const a = aiGeoSEO;
+        const f = (k: keyof AiGeoSEO, label: string, type = "number") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={a[k] as string} onChange={e => setAiGeoSEO(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const tog = (k: keyof AiGeoSEO, label: string) => (
+          <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <button type="button" onClick={() => setAiGeoSEO(p => ({ ...p, [k]: !p[k] }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${a[k] ? "bg-blue-600" : "bg-slate-200"}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${a[k] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            <div className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-100 rounded-2xl p-4">
+              <p className="text-xs font-bold text-violet-700 mb-1">🤖 AI / GEO SEO (Generative Engine Optimization)</p>
+              <p className="text-xs text-slate-500">Track your brand visibility in AI-powered search engines like ChatGPT, Perplexity, Google SGE, and Bing Copilot.</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">AI Engine Mentions</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {f("chatgpt_mentions", "ChatGPT Mentions")}
+                {f("perplexity_mentions", "Perplexity Mentions")}
+                {f("gemini_mentions", "Google Gemini Mentions")}
+                {f("bing_copilot_mentions", "Bing Copilot Mentions")}
+                {f("ai_overview_appearances", "AI Overview Appearances")}
+                {f("ai_referral_traffic", "AI Referral Traffic")}
+                {f("zero_click_searches", "Zero-Click Searches")}
+                {f("cited_by_ai_sources", "Cited by AI Sources")}
+              </div>
+              <div className="mt-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">AI Citation URLs (comma separated)</label>
+                <textarea rows={2} value={a.ai_citation_urls} onChange={e => setAiGeoSEO(p => ({ ...p, ai_citation_urls: e.target.value }))}
+                  placeholder="https://perplexity.ai/..., https://chatgpt.com/..."
+                  className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Featured Snippets & PAA</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {f("featured_snippets_owned", "Snippets Owned")}
+                {f("featured_snippets_gained", "Snippets Gained")}
+                {f("featured_snippets_lost", "Snippets Lost")}
+                {f("paa_boxes_owned", "PAA Boxes Owned")}
+                {f("sge_impressions", "SGE Impressions")}
+                {f("sge_clicks", "SGE Clicks")}
+                {f("sge_ctr", "SGE CTR (%)")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">GEO Optimization Done</h3>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {tog("brand_in_ai_answers", "Brand Appears in AI Answers")}
+                {tog("competitor_in_ai_answers", "Competitor in AI Answers")}
+                {tog("knowledge_panel_exists", "Knowledge Panel Exists")}
+                {tog("knowledge_panel_updated", "Knowledge Panel Updated")}
+                {tog("structured_data_for_ai", "Structured Data for AI Added")}
+                {tog("faq_schema_added", "FAQ Schema Added")}
+                {tog("speakable_schema", "Speakable Schema Added")}
+                {tog("content_q_and_a_format", "Content in Q&A Format")}
+                {tog("conversational_content_added", "Conversational Content Added")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-3">Scores</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("geo_score", "GEO Score (0-100)")}
+                {f("ai_visibility_score", "AI Visibility Score (0-100)")}
+              </div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Notes</label>
+              <textarea rows={2} value={a.notes} onChange={e => setAiGeoSEO(p => ({ ...p, notes: e.target.value }))}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── NLP SEO ── */}
+      {activeTab === "nlp" && (() => {
+        const n = nlpSEO;
+        const f = (k: keyof NlpSEO, label: string, type = "text") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={n[k] as string} onChange={e => setNlpSEO(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const tog = (k: keyof NlpSEO, label: string) => (
+          <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <button type="button" onClick={() => setNlpSEO(p => ({ ...p, [k]: !p[k] }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${n[k] ? "bg-blue-600" : "bg-slate-200"}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${n[k] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Entity Optimization</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {f("primary_entity", "Primary Entity")}
+                {f("entity_type", "Entity Type (Person/Org/Place)")}
+                {f("secondary_entities", "Secondary Entities (comma sep)")}
+                {f("entities_added_this_month", "Entities Added This Month", "number")}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {tog("entity_in_title", "Entity in Title Tag")}
+                {tog("entity_in_h1", "Entity in H1")}
+                {tog("entity_in_meta", "Entity in Meta Description")}
+                {tog("entities_linked_to_kg", "Entities Linked to Knowledge Graph")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Content Quality & Readability</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {f("readability_score", "Readability Score")}
+                {f("readability_grade", "Grade Level (e.g. Grade 8)")}
+                {f("flesch_kincaid", "Flesch-Kincaid Score")}
+                {f("avg_sentence_length", "Avg Sentence Length")}
+                {f("passive_voice_percent", "Passive Voice %")}
+                {f("sentiment_score", "Sentiment Score")}
+                {f("sentiment_label", "Sentiment (Positive/Neutral)")}
+                {f("topic_authority_score", "Topic Authority Score")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">NLP Keywords & EEAT</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {f("nlp_keywords_targeted", "NLP Keywords Targeted", "number")}
+                {f("nlp_keywords_ranking", "NLP Keywords Ranking", "number")}
+                {f("co_occurrence_terms", "Co-occurrence Terms Added")}
+                {f("citations_added", "Expert Citations Added", "number")}
+                {f("trust_signals_added", "Trust Signals Added")}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {tog("author_bio_added", "Author Bio Added/Updated")}
+                {tog("expert_quotes_added", "Expert Quotes Added")}
+                {tog("fact_checked", "Content Fact Checked")}
+                {tog("last_updated_shown", "Last Updated Date Shown")}
+              </div>
+              <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Structured Data for NLP</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {tog("faq_markup", "FAQ Markup")}
+                {tog("howto_markup", "HowTo Markup")}
+                {tog("article_schema", "Article Schema")}
+                {tog("review_schema", "Review Schema")}
+                {tog("speakable_markup", "Speakable Markup")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("nlp_score", "NLP Score (0-100)", "number")}
+                {f("content_depth_score", "Content Depth Score (0-100)", "number")}
+              </div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Notes</label>
+              <textarea rows={2} value={n.notes} onChange={e => setNlpSEO(p => ({ ...p, notes: e.target.value }))}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Semantic / LSI SEO ── */}
+      {activeTab === "semantic" && (() => {
+        const s = semanticSEO;
+        const f = (k: keyof SemanticSEO, label: string, type = "text") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={s[k] as string} onChange={e => setSemanticSEO(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const tog = (k: keyof SemanticSEO, label: string) => (
+          <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <button type="button" onClick={() => setSemanticSEO(p => ({ ...p, [k]: !p[k] }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${s[k] ? "bg-blue-600" : "bg-slate-200"}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${s[k] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Topic Clusters</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                {f("pillar_pages", "Total Pillar Pages", "number")}
+                {f("cluster_pages", "Total Cluster Pages", "number")}
+                {f("new_pillar_pages", "New Pillar Pages This Month", "number")}
+                {f("new_cluster_pages", "New Cluster Pages This Month", "number")}
+                {f("pages_added_this_month", "Total Pages Added", "number")}
+                {f("total_pages_on_topic", "Total Pages on Topic", "number")}
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Pillar Pages List</label>
+                <textarea rows={2} value={s.pillar_pages_list} onChange={e => setSemanticSEO(p => ({ ...p, pillar_pages_list: e.target.value }))}
+                  placeholder="e.g. /seo-guide, /link-building-guide"
+                  className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">LSI Keywords</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("lsi_keywords_added", "LSI Keywords Added", "number")}
+                {f("lsi_keywords_ranking", "LSI Keywords Ranking", "number")}
+                {f("related_terms_used", "Related Terms Used", "number")}
+                {f("co_occurrences_targeted", "Co-occurrences Targeted", "number")}
+                {f("co_citations", "Co-Citations", "number")}
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">LSI Keywords List</label>
+                <textarea rows={2} value={s.lsi_keywords_list} onChange={e => setSemanticSEO(p => ({ ...p, lsi_keywords_list: e.target.value }))}
+                  placeholder="best seo tools, seo strategy 2024, search engine optimization tips..."
+                  className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Internal Linking & Silos</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("internal_links_added", "Internal Links Added", "number")}
+                {f("orphan_pages_fixed", "Orphan Pages Fixed", "number")}
+                {f("avg_internal_links_per_page", "Avg Internal Links/Page", "number")}
+                {f("hub_pages_identified", "Hub Pages Identified", "number")}
+              </div>
+              {tog("silo_structure_ok", "Silo Structure Properly Set Up")}
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Topical Authority & Content Gaps</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {f("topical_authority_score", "Topical Authority Score", "number")}
+                {f("niche_relevance_score", "Niche Relevance Score", "number")}
+                {f("topic_coverage_score", "Topic Coverage Score %", "number")}
+                {f("content_gaps_identified", "Content Gaps Identified", "number")}
+                {f("content_gaps_filled", "Content Gaps Filled", "number")}
+                {f("cannibalization_issues", "Cannibalization Issues", "number")}
+                {f("cannibalization_fixed", "Cannibalization Fixed", "number")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("semantic_score", "Semantic SEO Score (0-100)", "number")}
+              </div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Notes</label>
+              <textarea rows={2} value={s.notes} onChange={e => setSemanticSEO(p => ({ ...p, notes: e.target.value }))}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Image SEO ── */}
+      {activeTab === "imageseo" && (() => {
+        const img = imageSeoReport;
+        const f = (k: keyof ImageSeoReport, label: string, type = "number") => (
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{label}</label>
+            <input type={type} value={img[k] as string} onChange={e => setImageSeoReport(p => ({ ...p, [k]: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        );
+        const tog = (k: keyof ImageSeoReport, label: string) => (
+          <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <button type="button" onClick={() => setImageSeoReport(p => ({ ...p, [k]: !p[k] }))}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${img[k] ? "bg-blue-600" : "bg-slate-200"}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${img[k] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+        );
+        return (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Alt Text & Inventory</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {f("total_images", "Total Images")}
+                {f("images_with_alt", "Images With Alt Text")}
+                {f("images_missing_alt", "Images Missing Alt")}
+                {f("images_missing_alt_fixed", "Missing Alt Fixed This Month")}
+                {f("images_with_title_attr", "Images With Title Attr")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Compression & Performance</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                {f("images_compressed", "Images Compressed")}
+                {f("images_converted_to_webp", "Converted to WebP")}
+                {f("avg_image_size_kb", "Avg Image Size (KB)")}
+                {f("oversized_images", "Oversized Images Found")}
+                {f("oversized_images_fixed", "Oversized Images Fixed")}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {tog("lazy_loading_enabled", "Lazy Loading Enabled")}
+                {tog("responsive_images", "Responsive Images (srcset)")}
+                {tog("next_gen_formats", "Next-Gen Formats Used (WebP/AVIF)")}
+                {tog("cdn_serving_images", "CDN Serving Images")}
+                {tog("image_sitemap_submitted", "Image Sitemap Submitted")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Image Schema & Structured Data</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("images_with_schema", "Images With Schema")}
+                {f("product_images_schema", "Product Images With Schema")}
+                {f("article_images_schema", "Article Images With Schema")}
+              </div>
+              {tog("logo_schema", "Logo Schema Added")}
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <h3 className="font-semibold text-slate-800 mb-4">Google Image Search Performance</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                {f("image_search_impressions", "Image Search Impressions")}
+                {f("image_search_clicks", "Image Search Clicks")}
+                {f("image_search_ctr", "Image Search CTR %")}
+                {f("top_ranking_image", "Top Ranking Image (filename)", "text")}
+                {f("top_ranking_image_keyword", "Top Keyword for Image", "text")}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {f("image_seo_score", "Image SEO Score (0-100)")}
+                {f("issues_fixed", "Issues Fixed This Month")}
+              </div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Notes</label>
+              <textarea rows={2} value={img.notes} onChange={e => setImageSeoReport(p => ({ ...p, notes: e.target.value }))}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Goals / KPIs ── */}
+      {activeTab === "goals" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-slate-800">Monthly Goals & KPIs</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Set targets and track what was achieved this month</p>
+              </div>
+              <button type="button" onClick={() => setGoals(prev => [...prev, { id: crypto.randomUUID(), goal: "", target: "", achieved: "", status: "ongoing" }])}
+                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors">
+                <Plus size={13} /> Add Goal
+              </button>
+            </div>
+            {goals.length === 0 ? (
+              <div className="text-center py-10 text-slate-300">
+                <Activity size={32} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm text-slate-400">No goals set. Add goals to track progress.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {goals.map((g, i) => (
+                  <div key={g.id} className="grid grid-cols-12 gap-2 items-start p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="col-span-4">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Goal / KPI</label>
+                      <input value={g.goal} onChange={e => setGoals(prev => prev.map((x, j) => j === i ? { ...x, goal: e.target.value } : x))}
+                        placeholder="e.g. Increase organic traffic" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-3">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Target</label>
+                      <input value={g.target} onChange={e => setGoals(prev => prev.map((x, j) => j === i ? { ...x, target: e.target.value } : x))}
+                        placeholder="e.g. +20%" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Achieved</label>
+                      <input value={g.achieved} onChange={e => setGoals(prev => prev.map((x, j) => j === i ? { ...x, achieved: e.target.value } : x))}
+                        placeholder="e.g. +15%" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Status</label>
+                      <select value={g.status} onChange={e => setGoals(prev => prev.map((x, j) => j === i ? { ...x, status: e.target.value as Goal["status"] } : x))}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
+                        <option value="achieved">✅ Achieved</option>
+                        <option value="partial">🟡 Partial</option>
+                        <option value="ongoing">🔵 Ongoing</option>
+                        <option value="missed">❌ Missed</option>
+                      </select>
+                    </div>
+                    <div className="col-span-1 flex items-end pb-1.5">
+                      <button type="button" onClick={() => setGoals(prev => prev.filter((_, j) => j !== i))} className="text-slate-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Time Spent ── */}
+      {activeTab === "time" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-slate-800">Time Spent This Month</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Track hours spent per category — shows total on report</p>
+              </div>
+              <button type="button" onClick={() => setTimeSpent(prev => [...prev, { id: crypto.randomUUID(), category: "On-Page SEO", hours: "", notes: "" }])}
+                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors">
+                <Plus size={13} /> Add Entry
+              </button>
+            </div>
+            {timeSpent.length === 0 ? (
+              <div className="text-center py-10 text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <p className="text-sm text-slate-400">No time entries yet</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {timeSpent.map((t, i) => (
+                    <div key={t.id} className="grid grid-cols-12 gap-2 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="col-span-4">
+                        <select value={t.category} onChange={e => setTimeSpent(prev => prev.map((x, j) => j === i ? { ...x, category: e.target.value } : x))}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
+                          {WORK_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <input type="number" min="0" step="0.5" value={t.hours} onChange={e => setTimeSpent(prev => prev.map((x, j) => j === i ? { ...x, hours: e.target.value } : x))}
+                          placeholder="hrs" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div className="col-span-5">
+                        <input value={t.notes} onChange={e => setTimeSpent(prev => prev.map((x, j) => j === i ? { ...x, notes: e.target.value } : x))}
+                          placeholder="Notes (optional)" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <button type="button" onClick={() => setTimeSpent(prev => prev.filter((_, j) => j !== i))} className="text-slate-300 hover:text-red-500 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
+                  <span className="text-xs text-slate-400">Total:</span>
+                  <span className="text-sm font-bold text-slate-700">
+                    {timeSpent.reduce((sum, t) => sum + (parseFloat(t.hours) || 0), 0).toFixed(1)} hours
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Invoice ── */}
+      {activeTab === "invoice" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold text-slate-800">Invoice</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className="text-xs text-slate-500">Paid</span>
+                <button type="button" onClick={() => setInvoice(prev => ({ ...prev, paid: !prev.paid }))}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${invoice.paid ? "bg-green-500" : "bg-slate-200"}`}>
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${invoice.paid ? "translate-x-4" : "translate-x-0.5"}`} />
+                </button>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1 block">Invoice Number</label>
+                <input value={invoice.number} onChange={e => setInvoice(p => ({ ...p, number: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1 block">Currency</label>
+                <select value={invoice.currency} onChange={e => setInvoice(p => ({ ...p, currency: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white">
+                  <option value="USD">$ USD</option>
+                  <option value="GBP">£ GBP</option>
+                  <option value="EUR">€ EUR</option>
+                  <option value="PKR">₨ PKR</option>
+                  <option value="AED">د.إ AED</option>
+                  <option value="SAR">﷼ SAR</option>
+                  <option value="INR">₹ INR</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1 block">Invoice Date</label>
+                <input type="date" value={invoice.date} onChange={e => setInvoice(p => ({ ...p, date: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1 block">Due Date</label>
+                <input type="date" value={invoice.due_date} onChange={e => setInvoice(p => ({ ...p, due_date: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-slate-600">Line Items</label>
+                <button type="button" onClick={() => setInvoice(p => ({ ...p, items: [...p.items, { desc: "", qty: "1", price: "" }] }))}
+                  className="text-xs text-blue-600 hover:underline font-medium">+ Add item</button>
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 uppercase px-1">
+                  <div className="col-span-7">Description</div>
+                  <div className="col-span-2 text-center">Qty</div>
+                  <div className="col-span-2 text-right">Price</div>
+                </div>
+                {invoice.items.map((item, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-7">
+                      <input value={item.desc} onChange={e => setInvoice(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, desc: e.target.value } : x) }))}
+                        placeholder="Service description" className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-2">
+                      <input type="number" min="1" value={item.qty} onChange={e => setInvoice(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, qty: e.target.value } : x) }))}
+                        className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-2">
+                      <input type="number" min="0" value={item.price} onChange={e => setInvoice(p => ({ ...p, items: p.items.map((x, j) => j === i ? { ...x, price: e.target.value } : x) }))}
+                        placeholder="0" className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      {invoice.items.length > 1 && (
+                        <button type="button" onClick={() => setInvoice(p => ({ ...p, items: p.items.filter((_, j) => j !== i) }))} className="text-slate-300 hover:text-red-500">
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-end pt-2 border-t border-slate-100">
+                  <div className="text-right">
+                    <p className="text-xs text-slate-400">Total</p>
+                    <p className="text-xl font-black text-slate-800">
+                      {invoice.currency === "USD" ? "$" : invoice.currency === "GBP" ? "£" : invoice.currency === "EUR" ? "€" : invoice.currency === "PKR" ? "₨" : invoice.currency === "AED" ? "د.إ" : invoice.currency === "SAR" ? "﷼" : "₹"}
+                      {invoice.items.reduce((s, it) => s + (parseFloat(it.qty) || 0) * (parseFloat(it.price) || 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Invoice Notes</label>
+              <textarea rows={2} value={invoice.notes} onChange={e => setInvoice(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Payment terms, bank details, thank you note..." className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Review Requests ── */}
+      {activeTab === "reviews" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-slate-800">Review Requests</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Track which platforms you asked the client to get reviews on</p>
+              </div>
+              <button type="button" onClick={() => setReviewRequests(prev => [...prev, { id: crypto.randomUUID(), platform: "Google", link: "", sent: false, notes: "" }])}
+                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors">
+                <Plus size={13} /> Add Platform
+              </button>
+            </div>
+            {reviewRequests.length === 0 ? (
+              <div className="text-center py-10 text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <p className="text-sm text-slate-400">No review requests added yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {reviewRequests.map((r, i) => (
+                  <div key={r.id} className="grid grid-cols-12 gap-2 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="col-span-3">
+                      <select value={r.platform} onChange={e => setReviewRequests(prev => prev.map((x, j) => j === i ? { ...x, platform: e.target.value } : x))}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
+                        {["Google","Yelp","Facebook","TripAdvisor","Trustpilot","G2","Clutch","Other"].map(p => <option key={p}>{p}</option>)}
+                      </select>
+                    </div>
+                    <div className="col-span-5">
+                      <input value={r.link} onChange={e => setReviewRequests(prev => prev.map((x, j) => j === i ? { ...x, link: e.target.value } : x))}
+                        placeholder="Review link URL" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-2">
+                      <input value={r.notes} onChange={e => setReviewRequests(prev => prev.map((x, j) => j === i ? { ...x, notes: e.target.value } : x))}
+                        placeholder="Notes" className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <button type="button" onClick={() => setReviewRequests(prev => prev.map((x, j) => j === i ? { ...x, sent: !x.sent } : x))}
+                        title={r.sent ? "Sent" : "Not sent"}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-colors ${r.sent ? "bg-green-500 border-green-500 text-white" : "bg-white border-slate-300 text-slate-300 hover:border-green-400"}`}>
+                        {r.sent && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </button>
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      <button type="button" onClick={() => setReviewRequests(prev => prev.filter((_, j) => j !== i))} className="text-slate-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div className="mt-3 text-xs text-slate-400 pt-2 border-t border-slate-100">
+                  {reviewRequests.filter(r => r.sent).length}/{reviewRequests.length} requests sent
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Section Visibility ── */}
+      {activeTab === "visibility" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="mb-5">
+              <h3 className="font-semibold text-slate-800">Report Sections</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Check which sections appear in the final report. Unchecked sections are hidden.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: "executive_summary", label: "Executive Summary" },
+                { key: "metrics", label: "Metrics & Charts" },
+                { key: "scores_radar", label: "SEO Score Radar" },
+                { key: "keywords", label: "Keyword Rankings" },
+                { key: "work_done", label: "Work Done" },
+                { key: "on_page", label: "On-Page SEO" },
+                { key: "local_seo", label: "Local SEO" },
+                { key: "schema", label: "Schema Markup" },
+                { key: "technical", label: "Technical SEO" },
+                { key: "content", label: "Content & Blogs" },
+                { key: "pagespeed", label: "PageSpeed Scores" },
+                { key: "social_signals", label: "Social Signals" },
+                { key: "press_release", label: "Press Release / PR" },
+                { key: "video_seo", label: "Video SEO" },
+                { key: "ecommerce", label: "E-commerce SEO" },
+                { key: "ai_geo_seo", label: "AI / GEO SEO" },
+                { key: "nlp_seo", label: "NLP SEO" },
+                { key: "semantic_seo", label: "Semantic / LSI SEO" },
+                { key: "image_seo", label: "Image SEO" },
+                { key: "goals", label: "Goals & KPIs" },
+                { key: "time_spent", label: "Time Spent" },
+                { key: "invoice", label: "Invoice" },
+                { key: "review_requests", label: "Review Requests" },
+                { key: "action_items", label: "Client Action Items" },
+                { key: "backlinks", label: "Backlinks" },
+                { key: "competitors", label: "Competitors" },
+                { key: "rank_history", label: "Rank History Chart" },
+                { key: "daily_logs", label: "Daily Work Log" },
+                { key: "csv_sheets", label: "Data Sheets (CSV)" },
+                { key: "screenshots", label: "Screenshots" },
+                { key: "recommendations", label: "Recommendations" },
+              ] as { key: keyof SectionVisibility; label: string }[]).map(({ key, label }) => (
+                <label key={key} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${sectionVisibility[key] ? "bg-blue-50 border-blue-200" : "bg-white border-slate-100 hover:bg-slate-50"}`}>
+                  <input type="checkbox" checked={!!sectionVisibility[key]}
+                    onChange={e => setSectionVisibility(prev => ({ ...prev, [key]: e.target.checked }))}
+                    className="accent-blue-600 w-4 h-4 shrink-0" />
+                  <span className="text-sm font-medium text-slate-700">{label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-100 flex gap-3">
+              <button type="button" onClick={() => setSectionVisibility(Object.fromEntries(Object.keys(sectionVisibility).map(k => [k, true])) as SectionVisibility)}
+                className="text-xs text-blue-600 hover:underline font-medium">Enable All</button>
+              <button type="button" onClick={() => setSectionVisibility(Object.fromEntries(Object.keys(sectionVisibility).map(k => [k, false])) as SectionVisibility)}
+                className="text-xs text-slate-400 hover:text-slate-600 hover:underline">Disable All</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Import Modal */}

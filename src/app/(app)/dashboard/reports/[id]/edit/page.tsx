@@ -6,7 +6,7 @@ export default async function EditReportPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const { data: report } = await supabase
     .from("reports")
-    .select("*, keywords(*), work_done(*), metrics(*)")
+    .select("*, keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), content_strategy(*)")
     .eq("id", id)
     .single();
 
@@ -47,6 +47,23 @@ export default async function EditReportPage({ params }: { params: Promise<{ id:
             notes: m.notes ?? "",
             recommendations: m.recommendations ?? "",
           } : undefined,
+          on_page_seo: report.on_page_seo ?? undefined,
+          local_seo: report.local_seo ?? undefined,
+          schema_seo: report.schema_seo ?? undefined,
+          technical_seo: report.technical_seo ?? undefined,
+          content_strategy: report.content_strategy ?? undefined,
+          csv_sheets: report.csv_sheets ?? [],
+          action_items: report.action_items ?? [],
+          executive_summary: report.executive_summary ?? "",
+          goals: report.goals ?? [],
+          time_spent: report.time_spent ?? [],
+          invoice: report.invoice ?? undefined,
+          review_requests: report.review_requests ?? [],
+          section_visibility: report.section_visibility ?? {},
+          social_signals: report.social_signals ?? undefined,
+          press_release: report.press_release ?? undefined,
+          video_seo: report.video_seo ?? undefined,
+          ecommerce_seo: report.ecommerce_seo ?? undefined,
         }}
       />
     </div>

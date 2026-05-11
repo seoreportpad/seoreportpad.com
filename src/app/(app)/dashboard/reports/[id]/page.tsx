@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, Minus,
   Globe, Mail, CheckCircle2, XCircle, AlertCircle,
   Link2, Copy, Check, FileSpreadsheet, LayoutTemplate,
-  ArrowUpRight, ArrowDownRight, Target, Activity, Layers, ReceiptText, MessageCircle, BarChart3,
+  ArrowUpRight, ArrowDownRight, Target, Activity, Layers, ReceiptText, MessageCircle, BarChart3, Sparkles,
 } from "lucide-react";
 import ReportScreenshots from "@/components/ReportScreenshots";
 import {
@@ -135,6 +135,93 @@ interface Report {
   competitors?: Competitor[];
   work_logs?: WorkLog[];
   rank_history?: RankHistoryItem[];
+  action_items?: { id: string; task: string; priority: "high" | "medium" | "low"; done: boolean }[];
+  executive_summary?: string;
+  goals?: { id: string; goal: string; target: string; achieved: string; status: "achieved" | "partial" | "missed" | "ongoing" }[];
+  time_spent?: { id: string; category: string; hours: string; notes: string }[];
+  invoice?: { number: string; date: string; due_date: string; currency: string; items: { desc: string; qty: string; price: string }[]; notes: string; paid: boolean };
+  review_requests?: { id: string; platform: string; link: string; sent: boolean; notes: string }[];
+  section_visibility?: { [key: string]: boolean };
+  social_signals?: {
+    fb_page_likes?: string; fb_page_followers?: string; fb_posts_this_month?: string; fb_total_reach?: string; fb_total_engagement?: string; fb_shares?: string; fb_page_url?: string;
+    ig_followers?: string; ig_posts_this_month?: string; ig_impressions?: string; ig_reach?: string; ig_engagement?: string; ig_profile_visits?: string; ig_url?: string;
+    tw_followers?: string; tw_tweets_this_month?: string; tw_impressions?: string; tw_mentions?: string; tw_retweets?: string; tw_url?: string;
+    li_followers?: string; li_posts_this_month?: string; li_impressions?: string; li_engagements?: string; li_url?: string;
+    pt_monthly_viewers?: string; pt_pins_created?: string; pt_saves?: string; pt_url?: string;
+    total_social_traffic?: string; brand_mentions?: string; notes?: string;
+  };
+  press_release?: {
+    items?: { id: string; title: string; url: string; published_date: string; distribution: string; status: string; pickups: string; da: string; notes: string }[];
+    total_distribution?: string; total_backlinks_earned?: string; notes?: string;
+  };
+  video_seo?: {
+    platform?: string; channel_url?: string; videos_published?: string;
+    total_views?: string; new_views?: string; subscribers?: string; new_subscribers?: string;
+    watch_time_hours?: string; avg_view_duration?: string;
+    top_video_title?: string; top_video_views?: string; top_video_url?: string;
+    videos_optimized?: string; titles_with_keyword?: string; descriptions_optimized?: string;
+    tags_added?: string; thumbnails_updated?: string; video_schema_added?: boolean;
+    youtube_search_traffic?: string; impressions?: string; ctr?: string; notes?: string;
+  };
+  ecommerce_seo?: {
+    platform?: string; total_products?: string; products_optimized?: string; products_with_schema?: string;
+    category_pages_optimized?: string; out_of_stock_handled?: string;
+    canonical_set?: boolean; faceted_nav_ok?: boolean; product_reviews_enabled?: boolean; rich_snippets_eligible?: boolean;
+    organic_revenue?: string; prev_organic_revenue?: string; organic_transactions?: string; prev_organic_transactions?: string;
+    organic_conversion_rate?: string; cart_abandonment_rate?: string; top_selling_organic_product?: string;
+    duplicate_product_pages?: string; thin_product_descriptions?: string; missing_product_images?: string; broken_product_links?: string; notes?: string;
+  };
+  ai_geo_seo?: {
+    chatgpt_mentions?: string; perplexity_mentions?: string; gemini_mentions?: string; bing_copilot_mentions?: string;
+    ai_overview_appearances?: string; ai_referral_traffic?: string; zero_click_searches?: string;
+    brand_in_ai_answers?: boolean; competitor_in_ai_answers?: boolean;
+    featured_snippets_owned?: string; featured_snippets_gained?: string; featured_snippets_lost?: string;
+    paa_boxes_owned?: string; knowledge_panel_exists?: boolean; knowledge_panel_updated?: boolean;
+    structured_data_for_ai?: boolean; faq_schema_added?: boolean; speakable_schema?: boolean;
+    content_q_and_a_format?: boolean; conversational_content_added?: boolean;
+    cited_by_ai_sources?: string; ai_citation_urls?: string;
+    sge_impressions?: string; sge_clicks?: string; sge_ctr?: string;
+    geo_score?: string; ai_visibility_score?: string; notes?: string;
+  };
+  nlp_seo?: {
+    primary_entity?: string; secondary_entities?: string; entity_type?: string;
+    entity_in_title?: boolean; entity_in_h1?: boolean; entity_in_meta?: boolean;
+    entities_added_this_month?: string; entities_linked_to_kg?: boolean;
+    readability_score?: string; readability_grade?: string; flesch_kincaid?: string;
+    avg_sentence_length?: string; passive_voice_percent?: string;
+    sentiment_score?: string; sentiment_label?: string;
+    nlp_keywords_targeted?: string; nlp_keywords_ranking?: string;
+    co_occurrence_terms?: string; topic_authority_score?: string;
+    author_bio_added?: boolean; expert_quotes_added?: boolean;
+    citations_added?: string; trust_signals_added?: string;
+    fact_checked?: boolean; last_updated_shown?: boolean;
+    speakable_markup?: boolean; faq_markup?: boolean; howto_markup?: boolean;
+    article_schema?: boolean; review_schema?: boolean;
+    nlp_score?: string; content_depth_score?: string; notes?: string;
+  };
+  semantic_seo?: {
+    pillar_pages?: string; cluster_pages?: string; new_pillar_pages?: string; new_cluster_pages?: string; pillar_pages_list?: string;
+    lsi_keywords_added?: string; lsi_keywords_ranking?: string; lsi_keywords_list?: string;
+    internal_links_added?: string; orphan_pages_fixed?: string; silo_structure_ok?: boolean;
+    avg_internal_links_per_page?: string; hub_pages_identified?: string;
+    topic_coverage_score?: string; content_gaps_identified?: string; content_gaps_filled?: string;
+    cannibalization_issues?: string; cannibalization_fixed?: string;
+    topical_authority_score?: string; niche_relevance_score?: string;
+    total_pages_on_topic?: string; pages_added_this_month?: string;
+    co_citations?: string; co_occurrences_targeted?: string; related_terms_used?: string;
+    semantic_score?: string; notes?: string;
+  };
+  image_seo_report?: {
+    total_images?: string; images_with_alt?: string; images_missing_alt?: string; images_missing_alt_fixed?: string;
+    images_compressed?: string; images_converted_to_webp?: string;
+    lazy_loading_enabled?: boolean; responsive_images?: boolean; images_with_title_attr?: string;
+    avg_image_size_kb?: string; oversized_images?: string; oversized_images_fixed?: string;
+    images_with_schema?: string; product_images_schema?: string; article_images_schema?: string; logo_schema?: boolean;
+    image_search_impressions?: string; image_search_clicks?: string; image_search_ctr?: string;
+    top_ranking_image?: string; top_ranking_image_keyword?: string;
+    cdn_serving_images?: boolean; next_gen_formats?: boolean; image_sitemap_submitted?: boolean;
+    image_seo_score?: string; issues_fixed?: string; notes?: string;
+  };
 }
 
 function CsvSheetsView({ sheets }: { sheets: { name: string; headers: string[]; rows: string[][] }[] }) {
@@ -327,6 +414,8 @@ export default function ReportViewPage() {
   };
 
   if (!report) return <div className="text-center py-20 text-slate-400 animate-pulse">Loading report...</div>;
+
+  const vis = (key: string) => report.section_visibility ? (report.section_visibility[key] !== false) : true;
 
   const m = report.metrics;
   const client = report.clients;
@@ -1364,6 +1453,14 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
           </div>
         </div>
 
+        {/* Executive Summary */}
+        {vis("executive_summary") && report.executive_summary && (
+          <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl p-6 print-avoid-break">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Executive Summary</p>
+            <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{report.executive_summary}</p>
+          </div>
+        )}
+
         {/* Monthly Performance Highlights */}
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm print-avoid-break flex flex-col">
@@ -1436,7 +1533,7 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
         </div>
 
         {/* Metrics grid */}
-        {m && (
+        {vis("metrics") && m && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricCard label="Organic Traffic" value={m.organic_traffic} prev={m.prev_traffic} />
@@ -1543,8 +1640,101 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
           </>
         )}
 
+        {/* PageSpeed Scores */}
+        {vis("pagespeed") && report.on_page_seo && (report.on_page_seo.mobile_speed_score != null || report.on_page_seo.desktop_speed_score != null) && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+              <Activity size={16} className="text-green-500" /> PageSpeed / Core Web Vitals
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Mobile Speed", value: report.on_page_seo.mobile_speed_score, suffix: "/100" },
+                { label: "Desktop Speed", value: report.on_page_seo.desktop_speed_score, suffix: "/100" },
+              ].map(({ label, value, suffix }) => value != null && (
+                <div key={label} className="text-center">
+                  <div className="relative inline-flex items-center justify-center w-24 h-24 mx-auto mb-2">
+                    <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.5" fill="none"
+                        stroke={value >= 90 ? "#22c55e" : value >= 50 ? "#f59e0b" : "#ef4444"}
+                        strokeWidth="3" strokeDasharray={`${(value / 100) * 97.4} 97.4`} strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className={`text-xl font-black ${value >= 90 ? "text-green-600" : value >= 50 ? "text-amber-600" : "text-red-600"}`}>{value}</span>
+                      <span className="text-[9px] text-slate-400">{suffix}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-600">{label}</p>
+                  <p className={`text-[10px] font-bold mt-0.5 ${value >= 90 ? "text-green-600" : value >= 50 ? "text-amber-600" : "text-red-600"}`}>
+                    {value >= 90 ? "Good" : value >= 50 ? "Needs Work" : "Poor"}
+                  </p>
+                </div>
+              ))}
+              {report.on_page_seo.lcp_score && (
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-center">
+                  <p className="text-xs text-slate-400 mb-1">LCP</p>
+                  <p className="text-lg font-black text-slate-700">{report.on_page_seo.lcp_score}</p>
+                </div>
+              )}
+              {report.on_page_seo.cls_score && (
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-center">
+                  <p className="text-xs text-slate-400 mb-1">CLS</p>
+                  <p className="text-lg font-black text-slate-700">{report.on_page_seo.cls_score}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Goals & KPIs */}
+        {vis("goals") && (report.goals ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+              <Target size={16} className="text-violet-500" /> Goals & KPIs — {report.month} {report.year}
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Goal / KPI</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium">Target</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium">Achieved</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.goals ?? []).map(g => {
+                    const cfg = {
+                      achieved: { label: "Achieved", cls: "bg-green-100 text-green-700 border-green-200" },
+                      partial:  { label: "Partial",  cls: "bg-amber-100 text-amber-700 border-amber-200" },
+                      ongoing:  { label: "Ongoing",  cls: "bg-blue-100 text-blue-700 border-blue-200" },
+                      missed:   { label: "Missed",   cls: "bg-red-100 text-red-700 border-red-200" },
+                    }[g.status];
+                    return (
+                      <tr key={g.id} className="border-b border-slate-50">
+                        <td className="py-3 font-medium text-slate-700">{g.goal}</td>
+                        <td className="py-3 text-center text-slate-500">{g.target || "—"}</td>
+                        <td className="py-3 text-center font-semibold text-slate-800">{g.achieved || "—"}</td>
+                        <td className="py-3 text-center">
+                          <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${cfg.cls}`}>{cfg.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex gap-4 text-xs text-slate-400 pt-3 border-t border-slate-100">
+              {["achieved","partial","ongoing","missed"].map(s => {
+                const count = (report.goals ?? []).filter(g => g.status === s).length;
+                return count > 0 ? <span key={s} className="capitalize">{count} {s}</span> : null;
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Keywords */}
-        {(report.keywords ?? []).length > 0 && (
+        {vis("keywords") && (report.keywords ?? []).length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <h2 className="font-semibold text-slate-700 mb-4">Keyword Rankings</h2>
             <div className="overflow-x-auto">
@@ -2461,19 +2651,178 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
         })()}
 
         {/* CSV Data Sheets */}
-        {report.csv_sheets && report.csv_sheets.length > 0 && template !== "minimal" && (
+        {vis("csv_sheets") && report.csv_sheets && report.csv_sheets.length > 0 && template !== "minimal" && (
           <CsvSheetsView sheets={report.csv_sheets} />
         )}
 
         {/* Screenshots & Evidence */}
-        {template !== "minimal" && (
+        {vis("screenshots") && template !== "minimal" && (
           <div className="print-avoid-break">
             <ReportScreenshots reportId={id} />
           </div>
         )}
 
+        {/* Time Spent */}
+        {vis("time_spent") && (report.time_spent ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Time Spent This Month
+            </h2>
+            <div className="space-y-2 mb-4">
+              {(report.time_spent ?? []).map((t, i) => {
+                const hrs = parseFloat(t.hours) || 0;
+                const total = (report.time_spent ?? []).reduce((s, x) => s + (parseFloat(x.hours) || 0), 0);
+                const pct = total > 0 ? (hrs / total) * 100 : 0;
+                const colors = ["bg-blue-500","bg-violet-500","bg-green-500","bg-amber-500","bg-rose-500","bg-teal-500","bg-orange-500"];
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-28 shrink-0 text-xs font-medium text-slate-600 truncate">{t.category}</div>
+                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${colors[i % colors.length]}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="text-xs font-bold text-slate-700 w-16 text-right">{hrs}h</div>
+                    {t.notes && <div className="text-xs text-slate-400 truncate max-w-xs">{t.notes}</div>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+              <span className="text-xs text-slate-400">Total hours this month:</span>
+              <span className="text-sm font-bold text-slate-700">
+                {(report.time_spent ?? []).reduce((s, t) => s + (parseFloat(t.hours) || 0), 0).toFixed(1)}h
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Review Requests */}
+        {vis("review_requests") && (report.review_requests ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Review Requests
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {(report.review_requests ?? []).map(r => (
+                <div key={r.id} className={`rounded-xl p-4 border ${r.sent ? "bg-green-50 border-green-200" : "bg-slate-50 border-slate-100"}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-slate-700">{r.platform}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${r.sent ? "bg-green-100 text-green-700 border-green-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
+                      {r.sent ? "Sent" : "Pending"}
+                    </span>
+                  </div>
+                  {r.link && <a href={r.link} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline truncate block">{r.link}</a>}
+                  {r.notes && <p className="text-xs text-slate-400 mt-1">{r.notes}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Invoice */}
+        {vis("invoice") && report.invoice && report.invoice.items?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden print-avoid-break">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-slate-700 flex items-center gap-2">
+                  <ReceiptText size={16} className="text-blue-500" /> Invoice #{report.invoice.number}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {report.invoice.date && `Date: ${new Date(report.invoice.date).toLocaleDateString()}`}
+                  {report.invoice.due_date && ` · Due: ${new Date(report.invoice.due_date).toLocaleDateString()}`}
+                </p>
+              </div>
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${report.invoice.paid ? "bg-green-100 text-green-700 border-green-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}>
+                {report.invoice.paid ? "✓ Paid" : "Unpaid"}
+              </span>
+            </div>
+            <div className="p-6">
+              <table className="w-full text-sm mb-4">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-2 text-left text-xs text-slate-500 font-medium">Description</th>
+                    <th className="py-2 text-center text-xs text-slate-500 font-medium w-16">Qty</th>
+                    <th className="py-2 text-right text-xs text-slate-500 font-medium w-24">Price</th>
+                    <th className="py-2 text-right text-xs text-slate-500 font-medium w-24">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.invoice.items.map((item, i) => {
+                    const qty = parseFloat(item.qty) || 0;
+                    const price = parseFloat(item.price) || 0;
+                    const sym = { USD: "$", GBP: "£", EUR: "€", PKR: "₨", AED: "د.إ", SAR: "﷼", INR: "₹" }[report.invoice!.currency] ?? "$";
+                    return (
+                      <tr key={i} className="border-b border-slate-50">
+                        <td className="py-3 text-slate-700">{item.desc}</td>
+                        <td className="py-3 text-center text-slate-500">{qty}</td>
+                        <td className="py-3 text-right text-slate-500">{sym}{price.toLocaleString()}</td>
+                        <td className="py-3 text-right font-semibold text-slate-800">{sym}{(qty * price).toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className="flex justify-end">
+                <div className="bg-slate-800 text-white px-6 py-3 rounded-xl text-right">
+                  <p className="text-xs opacity-60 mb-0.5">Total Amount</p>
+                  <p className="text-2xl font-black">
+                    {{ USD: "$", GBP: "£", EUR: "€", PKR: "₨", AED: "د.إ", SAR: "﷼", INR: "₹" }[report.invoice.currency] ?? "$"}
+                    {report.invoice.items.reduce((s, it) => s + (parseFloat(it.qty) || 0) * (parseFloat(it.price) || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {report.invoice.notes && (
+                <p className="text-xs text-slate-400 mt-4 pt-4 border-t border-slate-100">{report.invoice.notes}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Client Action Items */}
+        {vis("action_items") && (report.action_items ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+                <CheckCircle2 size={16} className="text-amber-500" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800">Client Action Items</h2>
+                <p className="text-xs text-slate-400">
+                  {(report.action_items ?? []).filter(a => a.done).length}/{(report.action_items ?? []).length} completed
+                  {(report.action_items ?? []).filter(a => a.priority === "high" && !a.done).length > 0 && (
+                    <span className="ml-2 text-red-500 font-medium">· {(report.action_items ?? []).filter(a => a.priority === "high" && !a.done).length} high priority pending</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {(report.action_items ?? [])
+                .sort((a, b) => {
+                  const p = { high: 0, medium: 1, low: 2 };
+                  return p[a.priority] - p[b.priority];
+                })
+                .map(item => (
+                  <div key={item.id} className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors ${item.done ? "bg-slate-50 border-slate-100" : item.priority === "high" ? "bg-red-50 border-red-100" : item.priority === "medium" ? "bg-amber-50 border-amber-100" : "bg-green-50 border-green-100"}`}>
+                    <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center ${item.done ? "bg-green-500 border-green-500" : "bg-white border-slate-300"}`}>
+                      {item.done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                    <p className={`flex-1 text-sm ${item.done ? "line-through text-slate-400" : "text-slate-700"}`}>{item.task}</p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                      item.priority === "high" ? "bg-red-100 text-red-600 border-red-200" :
+                      item.priority === "medium" ? "bg-amber-100 text-amber-600 border-amber-200" :
+                      "bg-green-100 text-green-600 border-green-200"
+                    }`}>
+                      {item.priority === "high" ? "HIGH" : item.priority === "medium" ? "MED" : "LOW"}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
         {/* Recommendations */}
-        {m?.recommendations && (
+        {vis("recommendations") && m?.recommendations && (
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6">
             <h2 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
               <TrendingUp size={18} className="text-blue-600" />
@@ -2484,7 +2833,7 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
         )}
 
         {/* Keyword Rank History Chart */}
-        {(report.rank_history ?? []).length > 0 && (() => {
+        {vis("rank_history") && (report.rank_history ?? []).length > 0 && (() => {
           // Group by keyword, build month-series
           const byKeyword: Record<string, { month: string; position: number }[]> = {};
           (report.rank_history ?? []).forEach(rh => {
@@ -2526,7 +2875,7 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
         })()}
 
         {/* Daily Work Logs */}
-        {(report.work_logs ?? []).length > 0 && (
+        {vis("daily_logs") && (report.work_logs ?? []).length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
             <h2 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2557,8 +2906,489 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
           </div>
         )}
 
+        {/* Social Signals */}
+        {vis("social_signals") && report.social_signals && (() => {
+          const ss = report.social_signals;
+          const platforms = [
+            { name: "Facebook", color: "#1877f2", icon: "f", stats: [
+              { label: "Page Likes", value: ss.fb_page_likes }, { label: "Followers", value: ss.fb_page_followers },
+              { label: "Posts", value: ss.fb_posts_this_month }, { label: "Reach", value: ss.fb_total_reach },
+              { label: "Engagement", value: ss.fb_total_engagement }, { label: "Shares", value: ss.fb_shares },
+            ], url: ss.fb_page_url },
+            { name: "Instagram", color: "#e1306c", icon: "ig", stats: [
+              { label: "Followers", value: ss.ig_followers }, { label: "Posts", value: ss.ig_posts_this_month },
+              { label: "Impressions", value: ss.ig_impressions }, { label: "Reach", value: ss.ig_reach },
+              { label: "Engagement", value: ss.ig_engagement }, { label: "Profile Visits", value: ss.ig_profile_visits },
+            ], url: ss.ig_url },
+            { name: "Twitter / X", color: "#000", icon: "x", stats: [
+              { label: "Followers", value: ss.tw_followers }, { label: "Tweets", value: ss.tw_tweets_this_month },
+              { label: "Impressions", value: ss.tw_impressions }, { label: "Mentions", value: ss.tw_mentions },
+              { label: "Retweets", value: ss.tw_retweets },
+            ], url: ss.tw_url },
+            { name: "LinkedIn", color: "#0a66c2", icon: "in", stats: [
+              { label: "Followers", value: ss.li_followers }, { label: "Posts", value: ss.li_posts_this_month },
+              { label: "Impressions", value: ss.li_impressions }, { label: "Engagements", value: ss.li_engagements },
+            ], url: ss.li_url },
+            { name: "Pinterest", color: "#e60023", icon: "pt", stats: [
+              { label: "Monthly Viewers", value: ss.pt_monthly_viewers }, { label: "Pins Created", value: ss.pt_pins_created },
+              { label: "Saves", value: ss.pt_saves },
+            ], url: ss.pt_url },
+          ].filter(p => p.stats.some(s => s.value && s.value !== "0" && s.value !== ""));
+          if (platforms.length === 0 && !ss.total_social_traffic && !ss.brand_mentions) return null;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+                <MessageCircle size={16} className="text-pink-500" /> Social Signals — {report.month} {report.year}
+              </h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                {platforms.map(p => (
+                  <div key={p.name} className="rounded-xl border p-4" style={{ borderColor: p.color + "30", background: p.color + "06" }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold" style={{ color: p.color }}>{p.name}</h3>
+                      {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View →</a>}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {p.stats.filter(s => s.value && s.value !== "0" && s.value !== "").map(s => (
+                        <div key={s.label}>
+                          <p className="text-[9px] text-slate-400 uppercase font-bold">{s.label}</p>
+                          <p className="text-sm font-black text-slate-800">{Number(s.value).toLocaleString()}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(ss.total_social_traffic || ss.brand_mentions) && (
+                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+                  {ss.total_social_traffic && <div><p className="text-xs text-slate-400">Total Social Traffic</p><p className="text-xl font-black text-slate-800">{Number(ss.total_social_traffic).toLocaleString()}</p></div>}
+                  {ss.brand_mentions && <div><p className="text-xs text-slate-400">Brand Mentions</p><p className="text-xl font-black text-slate-800">{Number(ss.brand_mentions).toLocaleString()}</p></div>}
+                </div>
+              )}
+              {ss.notes && <p className="text-xs text-slate-500 mt-3 pt-3 border-t border-slate-100 italic">{ss.notes}</p>}
+            </div>
+          );
+        })()}
+
+        {/* Press Release */}
+        {vis("press_release") && (report.press_release?.items ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold text-slate-700 flex items-center gap-2">
+                <Layers size={16} className="text-teal-500" /> Press Release / PR
+              </h2>
+              <div className="flex gap-4 text-xs text-slate-400">
+                {report.press_release?.total_distribution && <span>Distribution: <strong className="text-slate-700">{report.press_release.total_distribution} sites</strong></span>}
+                {report.press_release?.total_backlinks_earned && <span>Backlinks earned: <strong className="text-slate-700">{report.press_release.total_backlinks_earned}</strong></span>}
+              </div>
+            </div>
+            <div className="space-y-3">
+              {(report.press_release?.items ?? []).map(pr => (
+                <div key={pr.id} className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-slate-800 text-sm truncate">{pr.title}</p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${pr.status === "Picked Up" ? "bg-green-100 text-green-700 border-green-200" : pr.status === "Published" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>{pr.status}</span>
+                    </div>
+                    {pr.url && <a href={pr.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">{pr.url}</a>}
+                    <div className="flex gap-3 mt-2 text-xs text-slate-400 flex-wrap">
+                      {pr.published_date && <span>{new Date(pr.published_date).toLocaleDateString()}</span>}
+                      {pr.distribution && <span>via {pr.distribution}</span>}
+                      {pr.pickups && <span className="font-semibold text-teal-600">{pr.pickups} pickups</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Video SEO */}
+        {vis("video_seo") && report.video_seo && (() => {
+          const v = report.video_seo;
+          const hasData = v.subscribers || v.new_views || v.videos_published || v.videos_optimized;
+          if (!hasData) return null;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-semibold text-slate-700 flex items-center gap-2">
+                  <ArrowUpRight size={16} className="text-red-500" /> Video SEO — {v.platform || "YouTube"}
+                </h2>
+                {v.channel_url && <a href={v.channel_url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View Channel →</a>}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: "Subscribers", value: v.subscribers, sub: v.new_subscribers ? `+${v.new_subscribers} new` : undefined, color: "text-red-600" },
+                  { label: "New Views", value: v.new_views, color: "text-blue-600" },
+                  { label: "Videos Published", value: v.videos_published, color: "text-green-600" },
+                  { label: "Watch Time (hrs)", value: v.watch_time_hours, color: "text-violet-600" },
+                  { label: "Videos Optimized", value: v.videos_optimized, color: "text-teal-600" },
+                  { label: "Impressions", value: v.impressions, color: "text-slate-600" },
+                  { label: "CTR %", value: v.ctr ? v.ctr + "%" : undefined, color: "text-amber-600" },
+                  { label: "Search Traffic %", value: v.youtube_search_traffic ? v.youtube_search_traffic + "%" : undefined, color: "text-slate-600" },
+                ].filter(s => s.value).map(s => (
+                  <div key={s.label} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <p className="text-xs text-slate-400 mb-1">{s.label}</p>
+                    <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                    {s.sub && <p className="text-[10px] text-green-500 font-semibold">{s.sub}</p>}
+                  </div>
+                ))}
+              </div>
+              {v.top_video_title && (
+                <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+                  <p className="text-xs font-bold text-red-400 uppercase mb-1">Top Video This Month</p>
+                  <p className="font-semibold text-slate-800 text-sm">{v.top_video_title}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    {v.top_video_views && <span className="text-xs text-slate-500">{Number(v.top_video_views).toLocaleString()} views</span>}
+                    {v.top_video_url && <a href={v.top_video_url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">Watch →</a>}
+                  </div>
+                </div>
+              )}
+              {v.notes && <p className="text-xs text-slate-500 mt-3 italic">{v.notes}</p>}
+            </div>
+          );
+        })()}
+
+        {/* E-commerce SEO */}
+        {vis("ecommerce") && report.ecommerce_seo && (() => {
+          const e = report.ecommerce_seo;
+          const hasData = e.total_products || e.products_optimized || e.organic_revenue;
+          if (!hasData) return null;
+          const boolRow = (label: string, val?: boolean) => val != null ? (
+            <div key={label} className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+              <span className="text-xs font-medium text-slate-600">{label}</span>
+              <span className={`text-xs font-bold ${val ? "text-green-600" : "text-red-500"}`}>{val ? "✓ Yes" : "✗ No"}</span>
+            </div>
+          ) : null;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <h2 className="font-semibold text-slate-700 mb-5 flex items-center gap-2">
+                <ReceiptText size={16} className="text-emerald-500" /> E-commerce SEO — {e.platform || ""}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                {[
+                  { label: "Total Products", value: e.total_products },
+                  { label: "Products Optimized", value: e.products_optimized },
+                  { label: "With Schema", value: e.products_with_schema },
+                  { label: "Category Pages", value: e.category_pages_optimized },
+                ].filter(s => s.value).map(s => (
+                  <div key={s.label} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <p className="text-xs text-slate-400 mb-1">{s.label}</p>
+                    <p className="text-xl font-black text-slate-800">{Number(s.value).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+              {(e.organic_revenue || e.organic_transactions) && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+                  {e.organic_revenue && (
+                    <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+                      <p className="text-xs text-green-600 font-bold mb-1">Organic Revenue</p>
+                      <p className="text-2xl font-black text-green-700">{e.organic_revenue}</p>
+                      {e.prev_organic_revenue && <p className="text-[10px] text-green-400 mt-0.5">Prev: {e.prev_organic_revenue}</p>}
+                    </div>
+                  )}
+                  {e.organic_transactions && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                      <p className="text-xs text-blue-600 font-bold mb-1">Transactions</p>
+                      <p className="text-2xl font-black text-blue-700">{e.organic_transactions}</p>
+                      {e.prev_organic_transactions && <p className="text-[10px] text-blue-400 mt-0.5">Prev: {e.prev_organic_transactions}</p>}
+                    </div>
+                  )}
+                  {e.organic_conversion_rate && (
+                    <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+                      <p className="text-xs text-violet-600 font-bold mb-1">Conv. Rate</p>
+                      <p className="text-2xl font-black text-violet-700">{e.organic_conversion_rate}%</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                {boolRow("Canonical Tags Set", e.canonical_set)}
+                {boolRow("Faceted Navigation OK", e.faceted_nav_ok)}
+                {boolRow("Product Reviews Enabled", e.product_reviews_enabled)}
+                {boolRow("Rich Snippets Eligible", e.rich_snippets_eligible)}
+              </div>
+              {e.notes && <p className="text-xs text-slate-500 mt-3 italic">{e.notes}</p>}
+            </div>
+          );
+        })()}
+
+        {/* AI / GEO SEO */}
+        {vis("ai_geo_seo") && report.ai_geo_seo && (() => {
+          const a = report.ai_geo_seo;
+          const hasData = a.chatgpt_mentions || a.featured_snippets_owned || a.sge_impressions || a.ai_referral_traffic;
+          if (!hasData) return null;
+          const boolBadge = (val?: boolean) => val
+            ? <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">✓ Yes</span>
+            : <span className="text-xs font-bold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">✗ No</span>;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+                  <Sparkles size={16} className="text-violet-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-800">AI / GEO SEO</h2>
+                  <p className="text-xs text-slate-400">Generative Engine Optimization — AI Search Visibility</p>
+                </div>
+                {(a.geo_score || a.ai_visibility_score) && (
+                  <div className="ml-auto flex gap-3">
+                    {a.geo_score && <div className="text-center"><p className="text-xs text-slate-400">GEO Score</p><p className="text-xl font-black text-violet-600">{a.geo_score}</p></div>}
+                    {a.ai_visibility_score && <div className="text-center"><p className="text-xs text-slate-400">AI Visibility</p><p className="text-xl font-black text-blue-600">{a.ai_visibility_score}</p></div>}
+                  </div>
+                )}
+              </div>
+              {/* AI Mentions */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                {[
+                  { label: "ChatGPT", value: a.chatgpt_mentions, color: "text-green-600", bg: "bg-green-50" },
+                  { label: "Perplexity", value: a.perplexity_mentions, color: "text-blue-600", bg: "bg-blue-50" },
+                  { label: "Google Gemini", value: a.gemini_mentions, color: "text-orange-600", bg: "bg-orange-50" },
+                  { label: "Bing Copilot", value: a.bing_copilot_mentions, color: "text-sky-600", bg: "bg-sky-50" },
+                  { label: "AI Overview", value: a.ai_overview_appearances, color: "text-violet-600", bg: "bg-violet-50" },
+                  { label: "AI Traffic", value: a.ai_referral_traffic, color: "text-teal-600", bg: "bg-teal-50" },
+                  { label: "Zero-Clicks", value: a.zero_click_searches, color: "text-slate-600", bg: "bg-slate-50" },
+                  { label: "AI Citations", value: a.cited_by_ai_sources, color: "text-indigo-600", bg: "bg-indigo-50" },
+                ].filter(s => s.value && s.value !== "0" && s.value !== "").map(s => (
+                  <div key={s.label} className={`${s.bg} rounded-xl p-3 border border-slate-100`}>
+                    <p className="text-xs text-slate-400 mb-1">{s.label}</p>
+                    <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Snippets */}
+              {(a.featured_snippets_owned || a.paa_boxes_owned || a.sge_impressions) && (
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  {a.featured_snippets_owned && <div className="bg-amber-50 rounded-xl p-3 border border-amber-100"><p className="text-xs text-amber-600 font-bold mb-1">Featured Snippets</p><p className="text-2xl font-black text-amber-700">{a.featured_snippets_owned}</p>{a.featured_snippets_gained && <p className="text-xs text-green-500">+{a.featured_snippets_gained} gained</p>}</div>}
+                  {a.paa_boxes_owned && <div className="bg-blue-50 rounded-xl p-3 border border-blue-100"><p className="text-xs text-blue-600 font-bold mb-1">PAA Boxes</p><p className="text-2xl font-black text-blue-700">{a.paa_boxes_owned}</p></div>}
+                  {a.sge_impressions && <div className="bg-violet-50 rounded-xl p-3 border border-violet-100"><p className="text-xs text-violet-600 font-bold mb-1">SGE Impressions</p><p className="text-2xl font-black text-violet-700">{a.sge_impressions}</p>{a.sge_clicks && <p className="text-xs text-slate-400">{a.sge_clicks} clicks</p>}</div>}
+                </div>
+              )}
+              {/* GEO Work Done */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {[
+                  ["Brand in AI Answers", a.brand_in_ai_answers],
+                  ["Knowledge Panel Exists", a.knowledge_panel_exists],
+                  ["Knowledge Panel Updated", a.knowledge_panel_updated],
+                  ["Structured Data for AI", a.structured_data_for_ai],
+                  ["FAQ Schema Added", a.faq_schema_added],
+                  ["Speakable Schema", a.speakable_schema],
+                  ["Q&A Format Content", a.content_q_and_a_format],
+                  ["Conversational Content", a.conversational_content_added],
+                ].map(([label, val]) => (
+                  <div key={label as string} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-xs text-slate-600">{label as string}</span>
+                    {boolBadge(val as boolean)}
+                  </div>
+                ))}
+              </div>
+              {a.notes && <p className="text-xs text-slate-500 mt-4 italic border-t border-slate-100 pt-3">{a.notes}</p>}
+            </div>
+          );
+        })()}
+
+        {/* NLP SEO */}
+        {vis("nlp_seo") && report.nlp_seo && (() => {
+          const n = report.nlp_seo;
+          const hasData = n.primary_entity || n.nlp_score || n.readability_score;
+          if (!hasData) return null;
+          const boolBadge = (val?: boolean) => val
+            ? <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">✓</span>
+            : <span className="text-xs font-bold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">✗</span>;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
+                  <MessageCircle size={16} className="text-teal-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-800">NLP SEO</h2>
+                  <p className="text-xs text-slate-400">Natural Language Processing — Entity & Content Quality</p>
+                </div>
+                {(n.nlp_score || n.content_depth_score) && (
+                  <div className="ml-auto flex gap-3">
+                    {n.nlp_score && <div className="text-center"><p className="text-xs text-slate-400">NLP Score</p><p className="text-xl font-black text-teal-600">{n.nlp_score}</p></div>}
+                    {n.content_depth_score && <div className="text-center"><p className="text-xs text-slate-400">Content Depth</p><p className="text-xl font-black text-blue-600">{n.content_depth_score}</p></div>}
+                  </div>
+                )}
+              </div>
+              {n.primary_entity && (
+                <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 mb-4">
+                  <p className="text-xs font-bold text-teal-600 uppercase mb-1">Primary Entity</p>
+                  <p className="text-lg font-black text-slate-800">{n.primary_entity}</p>
+                  {n.entity_type && <p className="text-xs text-slate-500 mt-0.5">Type: {n.entity_type}</p>}
+                  {n.secondary_entities && <p className="text-xs text-slate-500 mt-0.5">Related: {n.secondary_entities}</p>}
+                  <div className="flex gap-2 mt-2">
+                    {[["In Title", n.entity_in_title], ["In H1", n.entity_in_h1], ["In Meta", n.entity_in_meta], ["KG Linked", n.entities_linked_to_kg]].map(([l, v]) =>
+                      <span key={l as string} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${v ? "bg-green-100 text-green-700 border-green-200" : "bg-red-50 text-red-400 border-red-100"}`}>{l as string} {v ? "✓" : "✗"}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: "Readability Score", value: n.readability_score },
+                  { label: "Grade Level", value: n.readability_grade },
+                  { label: "Flesch-Kincaid", value: n.flesch_kincaid },
+                  { label: "Sentiment", value: n.sentiment_label || n.sentiment_score },
+                  { label: "NLP Keywords", value: n.nlp_keywords_targeted },
+                  { label: "Ranking", value: n.nlp_keywords_ranking },
+                  { label: "Topic Authority", value: n.topic_authority_score },
+                  { label: "Citations Added", value: n.citations_added },
+                ].filter(s => s.value).map(s => (
+                  <div key={s.label} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <p className="text-xs text-slate-400 mb-1">{s.label}</p>
+                    <p className="text-sm font-black text-slate-800">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[["Author Bio", n.author_bio_added], ["Expert Quotes", n.expert_quotes_added], ["Fact Checked", n.fact_checked], ["Last Updated", n.last_updated_shown], ["FAQ Markup", n.faq_markup], ["HowTo Markup", n.howto_markup], ["Article Schema", n.article_schema], ["Speakable", n.speakable_markup]].map(([label, val]) => (
+                  <div key={label as string} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-xs text-slate-600">{label as string}</span>
+                    {boolBadge(val as boolean)}
+                  </div>
+                ))}
+              </div>
+              {n.notes && <p className="text-xs text-slate-500 mt-4 italic border-t border-slate-100 pt-3">{n.notes}</p>}
+            </div>
+          );
+        })()}
+
+        {/* Semantic / LSI SEO */}
+        {vis("semantic_seo") && report.semantic_seo && (() => {
+          const s = report.semantic_seo;
+          const hasData = s.pillar_pages || s.lsi_keywords_added || s.topical_authority_score;
+          if (!hasData) return null;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Layers size={16} className="text-indigo-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-800">Semantic SEO / LSI</h2>
+                  <p className="text-xs text-slate-400">Topic Clusters · LSI Keywords · Topical Authority</p>
+                </div>
+                {s.semantic_score && <div className="ml-auto text-center"><p className="text-xs text-slate-400">Semantic Score</p><p className="text-xl font-black text-indigo-600">{s.semantic_score}</p></div>}
+              </div>
+              {/* Topic Clusters */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                {[
+                  { label: "Pillar Pages", value: s.pillar_pages, sub: s.new_pillar_pages ? `+${s.new_pillar_pages} new` : undefined, color: "text-indigo-600", bg: "bg-indigo-50" },
+                  { label: "Cluster Pages", value: s.cluster_pages, sub: s.new_cluster_pages ? `+${s.new_cluster_pages} new` : undefined, color: "text-blue-600", bg: "bg-blue-50" },
+                  { label: "Total Topic Pages", value: s.total_pages_on_topic, sub: s.pages_added_this_month ? `+${s.pages_added_this_month} added` : undefined, color: "text-violet-600", bg: "bg-violet-50" },
+                  { label: "Internal Links Added", value: s.internal_links_added, color: "text-teal-600", bg: "bg-teal-50" },
+                  { label: "LSI Keywords Added", value: s.lsi_keywords_added, sub: s.lsi_keywords_ranking ? `${s.lsi_keywords_ranking} ranking` : undefined, color: "text-green-600", bg: "bg-green-50" },
+                  { label: "Content Gaps Filled", value: s.content_gaps_filled, sub: s.content_gaps_identified ? `of ${s.content_gaps_identified} found` : undefined, color: "text-amber-600", bg: "bg-amber-50" },
+                  { label: "Cannibalization Fixed", value: s.cannibalization_fixed, color: "text-red-600", bg: "bg-red-50" },
+                  { label: "Orphan Pages Fixed", value: s.orphan_pages_fixed, color: "text-slate-600", bg: "bg-slate-50" },
+                ].filter(x => x.value && x.value !== "0" && x.value !== "").map(x => (
+                  <div key={x.label} className={`${x.bg} rounded-xl p-3 border border-slate-100`}>
+                    <p className="text-xs text-slate-500 mb-1">{x.label}</p>
+                    <p className={`text-xl font-black ${x.color}`}>{x.value}</p>
+                    {x.sub && <p className="text-[10px] text-slate-400 mt-0.5">{x.sub}</p>}
+                  </div>
+                ))}
+              </div>
+              {/* Authority scores */}
+              {(s.topical_authority_score || s.niche_relevance_score || s.topic_coverage_score) && (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {s.topical_authority_score && <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100 text-center"><p className="text-xs text-indigo-400 font-bold mb-1">Topical Authority</p><p className="text-2xl font-black text-indigo-700">{s.topical_authority_score}</p></div>}
+                  {s.niche_relevance_score && <div className="bg-blue-50 rounded-xl p-3 border border-blue-100 text-center"><p className="text-xs text-blue-400 font-bold mb-1">Niche Relevance</p><p className="text-2xl font-black text-blue-700">{s.niche_relevance_score}</p></div>}
+                  {s.topic_coverage_score && <div className="bg-violet-50 rounded-xl p-3 border border-violet-100 text-center"><p className="text-xs text-violet-400 font-bold mb-1">Topic Coverage</p><p className="text-2xl font-black text-violet-700">{s.topic_coverage_score}%</p></div>}
+                </div>
+              )}
+              {s.lsi_keywords_list && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-3">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">LSI Keywords Used</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {s.lsi_keywords_list.split(",").map(kw => kw.trim()).filter(Boolean).map(kw => (
+                      <span key={kw} className="text-xs bg-white border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full">{kw}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {s.pillar_pages_list && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-2">Pillar Pages</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {s.pillar_pages_list.split(",").map(p => p.trim()).filter(Boolean).map(p => (
+                      <span key={p} className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {s.silo_structure_ok != null && (
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+                  <span className="text-xs text-slate-500">Silo Structure:</span>
+                  <span className={`text-xs font-bold ${s.silo_structure_ok ? "text-green-600" : "text-red-500"}`}>{s.silo_structure_ok ? "✓ Properly Set Up" : "✗ Needs Work"}</span>
+                </div>
+              )}
+              {s.notes && <p className="text-xs text-slate-500 mt-3 italic border-t border-slate-100 pt-3">{s.notes}</p>}
+            </div>
+          );
+        })()}
+
+        {/* Image SEO */}
+        {vis("image_seo") && report.image_seo_report && (() => {
+          const img = report.image_seo_report;
+          const hasData = img.total_images || img.images_compressed || img.image_seo_score;
+          if (!hasData) return null;
+          return (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-pink-50 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-pink-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-800">Image SEO</h2>
+                  <p className="text-xs text-slate-400">Alt Text · Compression · Schema · Google Image Search</p>
+                </div>
+                {img.image_seo_score && <div className="ml-auto text-center"><p className="text-xs text-slate-400">Image SEO Score</p><p className="text-xl font-black text-pink-600">{img.image_seo_score}</p></div>}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: "Total Images", value: img.total_images, color: "text-slate-700" },
+                  { label: "With Alt Text", value: img.images_with_alt, color: "text-green-600" },
+                  { label: "Missing Alt (Fixed)", value: img.images_missing_alt_fixed, color: "text-amber-600" },
+                  { label: "Compressed", value: img.images_compressed, color: "text-blue-600" },
+                  { label: "Converted to WebP", value: img.images_converted_to_webp, color: "text-teal-600" },
+                  { label: "Avg Size (KB)", value: img.avg_image_size_kb, color: "text-slate-600" },
+                  { label: "Oversized Fixed", value: img.oversized_images_fixed, color: "text-orange-600" },
+                  { label: "With Schema", value: img.images_with_schema, color: "text-violet-600" },
+                  { label: "Image Impressions", value: img.image_search_impressions, color: "text-blue-600" },
+                  { label: "Image Clicks", value: img.image_search_clicks, color: "text-green-600" },
+                  { label: "Image CTR", value: img.image_search_ctr ? img.image_search_ctr + "%" : undefined, color: "text-amber-600" },
+                  { label: "Issues Fixed", value: img.issues_fixed, color: "text-green-600" },
+                ].filter(x => x.value && x.value !== "0" && x.value !== "").map(x => (
+                  <div key={x.label} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <p className="text-xs text-slate-400 mb-1">{x.label}</p>
+                    <p className={`text-xl font-black ${x.color}`}>{x.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {[["Lazy Loading", img.lazy_loading_enabled], ["Responsive Images", img.responsive_images], ["Next-Gen Formats", img.next_gen_formats], ["CDN Serving Images", img.cdn_serving_images], ["Image Sitemap", img.image_sitemap_submitted], ["Logo Schema", img.logo_schema]].map(([label, val]) => (
+                  <div key={label as string} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-xs text-slate-600">{label as string}</span>
+                    <span className={`text-xs font-bold ${val ? "text-green-600" : "text-red-500"}`}>{val ? "✓" : "✗"}</span>
+                  </div>
+                ))}
+              </div>
+              {img.top_ranking_image_keyword && (
+                <div className="mt-4 bg-pink-50 rounded-xl p-3 border border-pink-100">
+                  <p className="text-xs font-bold text-pink-500 mb-1">Top Ranking Image Keyword</p>
+                  <p className="text-sm font-semibold text-slate-800">{img.top_ranking_image_keyword}</p>
+                  {img.top_ranking_image && <p className="text-xs text-slate-400 mt-0.5">{img.top_ranking_image}</p>}
+                </div>
+              )}
+              {img.notes && <p className="text-xs text-slate-500 mt-4 italic border-t border-slate-100 pt-3">{img.notes}</p>}
+            </div>
+          );
+        })()}
+
         {/* Backlinks */}
-        {(report.backlinks ?? []).length > 0 && (
+        {vis("backlinks") && (report.backlinks ?? []).length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
             <h2 className="font-semibold text-slate-700 mb-1 flex items-center gap-2">
               <Link2 size={16} className="text-indigo-500" /> Backlink Profile
@@ -2592,7 +3422,7 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
         )}
 
         {/* Competitors */}
-        {(report.competitors ?? []).length > 0 && (
+        {vis("competitors") && (report.competitors ?? []).length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
             <h2 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
               <Target size={16} className="text-orange-500" /> Competitor Analysis
