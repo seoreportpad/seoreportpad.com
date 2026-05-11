@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 interface Keyword { id: string; keyword: string; prev_ranking?: number; curr_ranking?: number; search_volume?: number; url?: string; }
-interface WorkItem { id: string; category: string; task: string; }
+interface WorkItem { id: string; category: string; task: string; description?: string; images?: string[]; }
 interface Metrics {
   organic_traffic?: number; prev_traffic?: number;
   backlinks?: number; prev_backlinks?: number;
@@ -239,6 +239,11 @@ export default function ReportViewPage() {
   const workByCategory = (report.work_done ?? []).reduce<Record<string, string[]>>((acc, w) => {
     if (!acc[w.category]) acc[w.category] = [];
     acc[w.category].push(w.task);
+    return acc;
+  }, {});
+  const workByCategoryFull = (report.work_done ?? []).reduce<Record<string, WorkItem[]>>((acc, w) => {
+    if (!acc[w.category]) acc[w.category] = [];
+    acc[w.category].push(w);
     return acc;
   }, {});
 
@@ -1483,23 +1488,49 @@ ${m?.recommendations ? `${h2("Recommendations", "#059669")}${noteBox(m.recommend
         )}
 
         {/* Work done */}
-        {Object.keys(workByCategory).length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        {Object.keys(workByCategoryFull).length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 print-avoid-break">
             <h2 className="font-semibold text-slate-700 mb-5">Work Done This Month</h2>
-            <div className="grid md:grid-cols-2 gap-5">
-              {Object.entries(workByCategory).map(([cat, tasks]) => (
-                <div key={cat}>
-                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">{cat}</h3>
-                  <ul className="space-y-1.5">
-                    {tasks.map((t, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                        <CheckCircle2 size={14} className="text-green-500 mt-0.5 shrink-0" />
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+            <div className="space-y-6">
+              {Object.entries(workByCategoryFull).map(([cat, items]) => {
+                const catColors: Record<string, string> = {
+                  "On-Page SEO":   "text-blue-700 bg-blue-50 border-blue-200",
+                  "Technical SEO": "text-violet-700 bg-violet-50 border-violet-200",
+                  "Link Building": "text-orange-700 bg-orange-50 border-orange-200",
+                  "Content":       "text-emerald-700 bg-emerald-50 border-emerald-200",
+                  "Local SEO":     "text-yellow-700 bg-yellow-50 border-yellow-200",
+                  "Reporting":     "text-slate-600 bg-slate-50 border-slate-200",
+                  "Other":         "text-pink-700 bg-pink-50 border-pink-200",
+                };
+                const cc = catColors[cat] ?? "text-slate-600 bg-slate-50 border-slate-200";
+                return (
+                  <div key={cat}>
+                    <div className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full border mb-3 ${cc}`}>
+                      <CheckCircle2 size={11} /> {cat}
+                    </div>
+                    <div className="space-y-3">
+                      {items.map((w, i) => (
+                        <div key={i} className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/50">
+                          <div className="px-4 pt-3 pb-2">
+                            <p className="font-medium text-slate-700 text-sm">{w.task}</p>
+                            {w.description && (
+                              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{w.description}</p>
+                            )}
+                          </div>
+                          {w.images && w.images.length > 0 && (
+                            <div className={`grid gap-1 p-2 bg-white border-t border-slate-100 ${w.images.length === 1 ? "grid-cols-1" : w.images.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                              {w.images.map((img, idx) => (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img key={idx} src={img} alt="" className={`w-full object-cover rounded-lg ${w.images!.length === 1 ? "max-h-64" : "h-32"}`} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

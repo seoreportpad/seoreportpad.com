@@ -29,7 +29,7 @@ const REPORT_TEMPLATES = [
 ];
 
 interface Keyword { keyword: string; prev_ranking: string; curr_ranking: string; search_volume: string; url: string; }
-interface WorkItem { category: string; task: string; }
+interface WorkItem { category: string; task: string; description?: string; images?: string[]; }
 interface Metrics {
   organic_traffic: string; prev_traffic: string;
   backlinks: string; prev_backlinks: string;
@@ -387,6 +387,112 @@ function GmbPostCard({ post, index, onChange, onRemove }: {
   );
 }
 
+const WORK_CAT_COLOR: Record<string, string> = {
+  "On-Page SEO":   "bg-blue-100 text-blue-700 border-blue-200",
+  "Technical SEO": "bg-violet-100 text-violet-700 border-violet-200",
+  "Link Building": "bg-orange-100 text-orange-700 border-orange-200",
+  "Content":       "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "Local SEO":     "bg-yellow-100 text-yellow-700 border-yellow-200",
+  "Reporting":     "bg-slate-100 text-slate-600 border-slate-200",
+  "Other":         "bg-pink-100 text-pink-700 border-pink-200",
+};
+
+function WorkItemCard({ item, onChange, onRemove }: {
+  item: WorkItem;
+  onChange: (updated: WorkItem) => void;
+  onRemove: () => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  const addImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    let loaded = 0;
+    const newUrls: string[] = [];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        newUrls.push(ev.target?.result as string);
+        loaded++;
+        if (loaded === files.length) {
+          onChange({ ...item, images: [...(item.images ?? []), ...newUrls] });
+          if (fileRef.current) fileRef.current.value = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (idx: number) =>
+    onChange({ ...item, images: (item.images ?? []).filter((_, i) => i !== idx) });
+
+  const catColor = WORK_CAT_COLOR[item.category] ?? "bg-slate-100 text-slate-600 border-slate-200";
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm group relative">
+      <button type="button" onClick={onRemove}
+        className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded-full hover:bg-red-50">
+        <Trash2 size={14} />
+      </button>
+
+      {/* Row 1: category + task */}
+      <div className="flex gap-3 items-start pr-7">
+        <select value={item.category} onChange={e => onChange({ ...item, category: e.target.value })}
+          className={`shrink-0 text-xs font-semibold border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${catColor}`}>
+          {WORK_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <input value={item.task} onChange={e => onChange({ ...item, task: e.target.value })}
+          placeholder="What was done? (e.g. Fixed broken canonical tags on 5 pages)"
+          className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      {/* Row 2: description */}
+      <div className="mt-2">
+        <textarea value={item.description ?? ""} onChange={e => onChange({ ...item, description: e.target.value })}
+          placeholder="Details / notes (optional) — e.g. Updated title tags on homepage, about, services pages. Added target keyword in first 100 words."
+          rows={2}
+          className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+      </div>
+
+      {/* Row 3: images */}
+      <div className="mt-3 flex flex-wrap gap-2 items-center">
+        {(item.images ?? []).map((img, idx) => (
+          <div key={idx} className="relative group/img w-20 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/40 transition-all flex items-center justify-center gap-1 opacity-0 group-hover/img:opacity-100">
+              <button type="button" onClick={() => setLightbox(img)} className="bg-white text-slate-700 p-1 rounded-full shadow">
+                <ZoomIn size={11} />
+              </button>
+              <button type="button" onClick={() => removeImage(idx)} className="bg-white text-red-500 p-1 rounded-full shadow">
+                <X size={11} />
+              </button>
+            </div>
+          </div>
+        ))}
+        <label className="flex items-center gap-1.5 cursor-pointer border-2 border-dashed border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-500 rounded-xl px-3 py-2 text-xs font-medium transition-colors">
+          <ImagePlus size={14} /> Add Image
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={addImages} />
+        </label>
+      </div>
+
+      {lightbox && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <div className="relative max-w-4xl max-h-full" onClick={e => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={lightbox} alt="" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+            <button onClick={() => setLightbox(null)}
+              className="absolute -top-4 -right-4 bg-white text-slate-700 rounded-full p-2 shadow-lg hover:bg-slate-100">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ReportForm({ reportId, initialClientId, initialWebsiteId, initial }: Props) {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
@@ -593,10 +699,10 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     setBulkKeywordModal(false);
   };
 
-  const addWork = () => setWorkDone([...workDone, { category: "On-Page SEO", task: "" }]);
+  const addWork = () => setWorkDone([...workDone, { category: "On-Page SEO", task: "", description: "", images: [] }]);
   const removeWork = (i: number) => setWorkDone(workDone.filter((_, idx) => idx !== i));
-  const updateWork = (i: number, k: keyof WorkItem, v: string) =>
-    setWorkDone(workDone.map((w, idx) => idx === i ? { ...w, [k]: v } : w));
+  const updateWork = (i: number, updated: Partial<WorkItem>) =>
+    setWorkDone(workDone.map((w, idx) => idx === i ? { ...w, ...updated } : w));
 
   const op = (k: keyof OnPageSEO, v: string | boolean) => setOnPage(prev => ({ ...prev, [k]: v }));
   const lp = (k: keyof LocalSEO, v: string | boolean) => setLocalSEO(prev => ({ ...prev, [k]: v }));
@@ -1703,25 +1809,14 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
               Select a client in Basic Info tab to enable &quot;Import from Daily Log&quot;
             </div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {workDone.map((w, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-3">
-                  <select value={w.category} onChange={e => updateWork(i, "category", e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {WORK_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-8">
-                  <input placeholder="Describe what was done..." value={w.task} onChange={e => updateWork(i, "task", e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div className="col-span-1 flex justify-center">
-                  <button type="button" onClick={() => removeWork(i)} className="p-1.5 text-slate-300 hover:text-red-500 transition-colors">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+              <WorkItemCard
+                key={i}
+                item={w}
+                onChange={updated => updateWork(i, updated)}
+                onRemove={() => removeWork(i)}
+              />
             ))}
             {workDone.filter(w => w.task).length === 0 && (
               <p className="text-xs text-slate-400 text-center py-4">No tasks yet — add manually or import from Daily Log</p>
