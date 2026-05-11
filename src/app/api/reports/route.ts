@@ -42,6 +42,6 @@ export async function POST(req: NextRequest) {
     if (content_strategy) await sb.from("content_strategy").insert({ ...content_strategy, report_id: report.id });
 
     const { data: full } = await sb.from("reports").select("*, clients(*), keywords(*), work_done(*), metrics(*), on_page_seo(*), local_seo(*), schema_seo(*), technical_seo(*), content_strategy(*)").eq("id", report.id).single();
-    return NextResponse.json(full);
+    return NextResponse.json(full ?? report);
   } catch (e: unknown) { return NextResponse.json({ error: String(e) }, { status: 500 }); }
 }

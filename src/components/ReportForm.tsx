@@ -1505,6 +1505,10 @@ export default function ReportForm({ reportId, initialClientId, initialWebsiteId
     const method = reportId ? "PUT" : "POST";
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
+    if (!res.ok || !data?.id) {
+      alert(data?.error ?? "Failed to save report. Please try again.");
+      return;
+    }
     router.push(`/dashboard/reports/${data.id}`);
   };
 
